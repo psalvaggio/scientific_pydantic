@@ -196,7 +196,7 @@ class NDArrayValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
     clip: ClipValidator | None = None
 
     @classmethod
-    def from_kwargs(cls, **kwargs) -> ty.Self:
+    def from_kwargs(cls, **kwargs) -> "NDArrayValidator":
         """Create from field/value pairs"""
         try:
             return cls(
