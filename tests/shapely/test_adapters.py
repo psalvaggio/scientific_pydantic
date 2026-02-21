@@ -1,5 +1,6 @@
 """Unit tests for shapely geometry adaptors"""
 
+import sys
 import typing as ty
 from collections.abc import Mapping
 
@@ -257,13 +258,18 @@ def test_invalid_fields(data: dict[str, ty.Any], match: str) -> None:
     ("annotation", "match"),
     [
         pytest.param(
-            ty.Annotated[5, GeometryAdapter()],
+            5,
             "GeometryAdapter can only be used on a shapely "
             "geometry type or a union of shapely geometry types, not 5",
-            id="5",
+            marks=[
+                pytest.mark.skipif(
+                    sys.version_info < (3, 12),
+                    reason="Annotated enforced this in earlier Python versions",
+                )
+            ],
         ),
         pytest.param(
-            ty.Annotated[int, GeometryAdapter()],
+            int,
             "GeometryAdapter can only be used on a shapely "
             "geometry type or a union of shapely geometry types.*int",
             id="int",
@@ -275,7 +281,7 @@ def test_bad_models(annotation: ty.Any, match: str) -> None:
     with pytest.raises(pydantic.PydanticSchemaGenerationError, match=match):
 
         class Model(pydantic.BaseModel):
-            field: annotation
+            field: ty.Annotated[annotation, GeometryAdapter()]
 
 
 def test_round_trip_serialization() -> None:
