@@ -10,7 +10,7 @@ from numpy.typing import ArrayLike
 from scientific_pydantic.numpy import NDArrayAdapter
 
 
-def _make_model(**kwargs: dict[str, ty.Any]) -> type[pydantic.BaseModel]:
+def _make_model(**kwargs) -> type[pydantic.BaseModel]:
     class Model(pydantic.BaseModel):
         arr: ty.Annotated[np.ndarray, NDArrayAdapter(**kwargs)]
 
@@ -118,7 +118,7 @@ def test_shape_exact(
     else:
         with pytest.raises(pydantic.ValidationError) as exc_info:
             model(arr=input_data)
-        assert "dimension" in str(exc_info.value).lower()
+        assert "does not match spec" in str(exc_info.value).lower()
 
 
 @pytest.mark.parametrize(
@@ -349,7 +349,7 @@ def test_shape_constraint_dimension_mismatch() -> None:
     """Test error when shape constraint length doesn't match array dims"""
     model = _make_model(shape=(3, 3))
 
-    with pytest.raises(pydantic.ValidationError, match="dimension"):
+    with pytest.raises(pydantic.ValidationError, match="does not match spec"):
         model(arr=[1, 2, 3])  # 1D array with 2D shape constraint
 
 
@@ -369,3 +369,98 @@ def test_adaptor_invalid_ndim() -> None:
     """Test that negative ndim is rejected"""
     with pytest.raises(ValueError, match="ndim"):
         NDArrayAdapter(ndim=-1)
+
+
+@pytest.mark.parametrize(
+    ("shape", "input_shape", "should_pass"),
+    [
+        # --- Basic exact matching ---
+        ([2, 3, 4], (2, 3, 4), True),
+        ([2, 3, 4], (2, 3, 5), False),  # last dim wrong
+        ([2, 3, 4], (2, 3), False),  # too few dims
+        ([2, 3, 4], (2, 3, 4, 5), False),  # too many dims
+        # --- None (any size, exactly one dim) ---
+        ([None], (5,), True),
+        ([None], (0,), True),  # zero-size dim
+        ([None], (), False),  # must match exactly one
+        ([None, None], (3, 7), True),
+        ([2, None, 4], (2, 99, 4), True),
+        ([2, None, 4], (2, 99, 5), False),  # last dim wrong
+        # --- range ---
+        ([range(3, 6)], (3,), True),
+        ([range(3, 6)], (5,), True),
+        ([range(3, 6)], (6,), False),  # range is exclusive
+        ([range(3, 6)], (2,), False),
+        ([range(1)], (0,), True),
+        ([range(2, 10, 2)], (4,), True),  # step
+        ([range(2, 10, 2)], (3,), False),  # step mismatch
+        # --- slice ---
+        ([slice(3, 6)], (3,), True),
+        ([slice(3, 6)], (5,), True),
+        ([slice(3, 6)], (6,), False),
+        ([slice(None, 5)], (0,), True),  # unbounded below
+        ([slice(None, 5)], (4,), True),
+        ([slice(None, 5)], (5,), False),
+        ([slice(3, None)], (3,), True),  # unbounded above
+        ([slice(3, None)], (100,), True),
+        ([slice(3, None)], (2,), False),
+        ([slice(2, None, 2)], (4,), True),  # unbounded with step
+        ([slice(2, None, 2)], (5,), False),
+        # --- Single ellipsis ---
+        ([...], (), True),  # matches 0 dims
+        ([...], (3,), True),
+        ([...], (3, 4, 5), True),
+        ([..., 4], (4,), True),  # ellipsis matches 0
+        ([..., 4], (3, 4), True),
+        ([..., 4], (3, 5, 4), True),
+        ([..., 4], (3, 5), False),
+        ([2, ...], (2,), True),
+        ([2, ...], (2, 3, 4), True),
+        ([2, ...], (3,), False),
+        ([2, ..., 4], (2, 4), True),  # ellipsis matches 0
+        ([2, ..., 4], (2, 3, 4), True),
+        ([2, ..., 4], (2, 3, 5, 4), True),
+        ([2, ..., 4], (2, 3, 5), False),
+        # --- Multiple ellipses ---
+        ([..., ...], (), True),
+        ([..., ...], (3, 4), True),
+        ([..., 3, ...], (3,), True),  # both ellipses match 0
+        ([..., 3, ...], (2, 3, 4), True),
+        ([..., 3, ...], (2, 4), False),
+        ([2, ..., 3, ..., 4], (2, 3, 4), True),  # both ellipses match 0
+        ([2, ..., 3, ..., 4], (2, 5, 3, 6, 7, 4), True),
+        ([2, ..., 3, ..., 4], (2, 4), False),  # missing the 3
+        ([..., 2, ..., 2, ...], (2, 2), True),
+        ([..., 2, ..., 2, ...], (2, 3, 2), True),
+        ([..., 2, ..., 2, ...], (2,), False),  # only one 2
+        # --- Empty shape spec ---
+        ([], (), True),
+        ([], (3,), False),
+        # --- Zero-size dimensions ---
+        ([0], (0,), True),
+        ([0], (1,), False),
+        ([..., 0], (3, 0), True),
+        ([..., 0], (3, 1), False),
+        # --- Mixed spec types ---
+        ([2, range(3, 6), None, ..., 4], (2, 4, 99, 4), True),
+        ([2, range(3, 6), None, ..., 4], (2, 4, 99, 1, 2, 4), True),
+        ([2, range(3, 6), None, ..., 4], (2, 2, 99, 4), False),  # range fail
+    ],
+    ids=lambda x: (
+        ("pass" if x else "fail")
+        if isinstance(x, bool)
+        else f"[{','.join(str(y) for y in x)}]"
+    ),
+)
+def test_shape(*, shape: tuple, input_shape: tuple, should_pass: bool) -> None:
+    """Test ellipsis shape specs"""
+
+    class Model(pydantic.BaseModel):
+        arr: ty.Annotated[np.ndarray, NDArrayAdapter(shape=shape)]
+
+    data = np.zeros(input_shape)
+    if should_pass:
+        assert Model(arr=data).arr is data
+    else:
+        with pytest.raises(pydantic.ValidationError, match="does not match spec"):
+            Model(arr=data)

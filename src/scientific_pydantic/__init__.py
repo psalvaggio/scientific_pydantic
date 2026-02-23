@@ -8,10 +8,13 @@ path as the type they are adapting. For instance, the adapter
 """
 
 from . import astropy, numpy, scipy, shapely
+from .ellipsis import EllipsisAdapter, EllipsisLiteral
 from .range import RangeAdapter
 from .slice import IntSliceAdapter, SliceAdapter
 
 __all__ = [
+    "EllipsisAdapter",
+    "EllipsisLiteral",
     "IntSliceAdapter",
     "RangeAdapter",
     "SliceAdapter",

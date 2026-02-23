@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import typing as ty
 from collections.abc import Iterable, Mapping, Sequence
@@ -14,6 +15,8 @@ from scientific_pydantic.numpy import NDArrayAdapter
 
 if ty.TYPE_CHECKING:
     from scipy.spatial.transform import Rotation
+
+    from scientific_pydantic.ellipsis import EllipsisLiteral
 
 
 class RotationAdapter:
@@ -87,7 +90,7 @@ class RotationAdapter:
         *,
         single: bool | None = None,
         ndim: int | None = None,
-        shape: Sequence[int | range | slice | None] | None = None,
+        shape: Sequence[EllipsisLiteral | int | range | slice | None] | None = None,
     ) -> None:
         from scientific_pydantic.numpy.validators import NDArrayValidator
 
@@ -124,10 +127,20 @@ class RotationAdapter:
             _validate_rotation,
         )
         if self._np_validator is not None:
+
+            def _val(x: ty.Any) -> ty.Any:
+                try:
+                    self._np_validator(x)  # type: ignore[not-callable]
+                except PydanticCustomError as e:
+                    err_t = "invalid_rotation_shape"
+                    msg = "Rotation object failed shape constraints: {e}"
+                    raise PydanticCustomError(err_t, msg, {"e": str(e)}) from e
+                return x
+
             python_schema = core_schema.chain_schema(
                 [
                     python_schema,
-                    core_schema.no_info_plain_validator_function(self._np_validator),
+                    core_schema.no_info_plain_validator_function(_val),
                 ]
             )
 
@@ -150,29 +163,41 @@ def _rotation_to_dict(r: Rotation) -> dict:
 
 
 @functools.lru_cache
-def _mapping_validator() -> pydantic.TypeAdapter:
+def _mapping_validator() -> pydantic.TypeAdapter:  # noqa: C901
     """Get the pydantic TypeAdapter"""
-    if ty.TYPE_CHECKING:
-        import numpy as np
+    import numpy as np  # noqa: TC002
+    from scipy.spatial.transform import Rotation
 
     class Quat(pydantic.BaseModel, extra="forbid"):
         quat: ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., 4))]
         scalar_first: bool = False
 
+        def __call__(self) -> Rotation:
+            return Rotation.from_quat(self.quat, scalar_first=self.scalar_first)
+
     class Matrix(pydantic.BaseModel, extra="forbid"):
         matrix: ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., 3, 3))]
         assume_valid: bool = False
+
+        def __call__(self) -> Rotation:
+            return Rotation.from_matrix(self.matrix, assume_valid=self.assume_valid)
 
     class Rotvec(pydantic.BaseModel, extra="forbid"):
         rotvec: ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., 3))]
         degrees: bool = False
 
+        def __call__(self) -> Rotation:
+            return Rotation.from_rotvec(self.rotvec, degrees=self.degrees)
+
     class Mrp(pydantic.BaseModel, extra="forbid"):
         mrp: ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., 3))]
 
+        def __call__(self) -> Rotation:
+            return Rotation.from_mrp(self.mrp)
+
     class Euler(pydantic.BaseModel, extra="forbid"):
         class Arg(pydantic.BaseModel, extra="forbid"):
-            seq: str = pydantic.Field(pattern="^[xyz]{1,3}|[XYZ]{1,3}$")
+            seq: str = pydantic.Field(pattern="^([xyz]{1,3}|[XYZ]{1,3})$")
             angles: (
                 float
                 | ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., slice(1, 4)))]
@@ -181,10 +206,15 @@ def _mapping_validator() -> pydantic.TypeAdapter:
 
         euler: Arg
 
+        def __call__(self) -> Rotation:
+            return Rotation.from_euler(
+                self.euler.seq, self.euler.angles, degrees=self.euler.degrees
+            )
+
     class Davenport(pydantic.BaseModel, extra="forbid"):
         class Arg(pydantic.BaseModel, extra="forbid"):
             axes: ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., slice(1, 4), 3))]
-            order: ty.Literal["e", "extrinsic", "i", "intrinsic"]
+            order: ty.Literal["e", "extrinsic", "i", "intrinsic"]  # type: ignore[invalid-literal]
             angles: (
                 float
                 | ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., slice(1, 4)))]
@@ -192,6 +222,14 @@ def _mapping_validator() -> pydantic.TypeAdapter:
             degrees: bool = False
 
         davenport: Arg
+
+        def __call__(self) -> Rotation:
+            return Rotation.from_davenport(
+                self.davenport.axes,
+                self.davenport.order,
+                self.davenport.angles,
+                degrees=self.davenport.degrees,
+            )
 
     def _disc(val: Mapping) -> str:
         if "quat" in val:
@@ -222,7 +260,7 @@ def _mapping_validator() -> pydantic.TypeAdapter:
             | ty.Annotated[Mrp, pydantic.Tag("from_mrp")]
             | ty.Annotated[Euler, pydantic.Tag("from_euler")]
             | ty.Annotated[Davenport, pydantic.Tag("from_davenport")],
-            ty.Discriminator(_disc),
+            pydantic.Discriminator(_disc),
         ]
     )
 
@@ -232,7 +270,7 @@ def _ndarray_adaptor() -> pydantic.TypeAdapter:
     import numpy as np
 
     return pydantic.TypeAdapter(
-        ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., 4))]
+        ty.Annotated[np.ndarray, NDArrayAdapter(dtype=np.float64, shape=(..., 4))]
     )
 
 
@@ -243,15 +281,16 @@ def _validate_rotation(value: ty.Any) -> Rotation:
         return value
 
     if isinstance(value, Mapping):
-        return _mapping_validator().validate_python(value)
+        return _mapping_validator().validate_python(value)()
 
     if isinstance(value, Iterable):
-        return _ndarray_adaptor(value)
+        with contextlib.suppress(pydantic.ValidationError):
+            return Rotation(_ndarray_adaptor().validate_python(value))
 
     err_t = "invalid_rotation_type"
     msg = (
-        f"Cannot convert {type(value)!r} to scipy.spatial.transform.Rotation. "
+        "Cannot convert {val_t} to scipy.spatial.transform.Rotation. "
         "Expected a Rotation, a quaternion array, or a mapping with one of: "
         '"quat", "matrix", "rotvec", "mrp", "euler" or "davenport".'
     )
-    raise PydanticCustomError(err_t, msg)
+    raise PydanticCustomError(err_t, msg, {"val_t": repr(type(value))})
