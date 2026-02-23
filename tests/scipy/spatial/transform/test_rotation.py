@@ -265,7 +265,7 @@ def test_ndim1_stacked_accepted() -> None:
         rotation: ty.Annotated[Rotation, RotationAdapter(ndim=1)]
 
     pose = Ndim1(rotation={"quat": [[0, 0, 0, 1], [0, 0, 0, 1]]})
-    assert pose.rotation.shape == (2,)
+    assert np.asarray(pose.rotation).shape == (2,)
 
     with pytest.raises(pydantic.ValidationError, match="invalid_rotation_shape"):
         Ndim1(rotation={"quat": IDENTITY_QUAT})
@@ -285,7 +285,7 @@ def test_batch_quat_accepted(quats: list[list[float]]) -> None:
     """Test that we accept batch rotation unconstrained"""
     m = Basic(rotation={"quat": quats})
     assert isinstance(m.rotation, Rotation)
-    assert m.rotation.shape == np.asarray(quats).shape[:-1]
+    assert np.asarray(m.rotation).shape == np.asarray(quats).shape[:-1]
 
 
 @pytest.mark.parametrize(
@@ -317,7 +317,7 @@ def test_shape_constraint(
     if error is None:
         m = Model(rotation=data)
         assert isinstance(m.rotation, Rotation)
-        assert m.rotation.shape == truth_shape
+        assert np.asarray(m.rotation).shape == truth_shape
     else:
         with pytest.raises(pydantic.ValidationError, match=error):
             Model(rotation=data)
@@ -346,7 +346,7 @@ def test_batch_rotvec_accepted(
     """Test that we accept mapping rotation unconstrained"""
     m = Basic(rotation=data)
     assert isinstance(m.rotation, Rotation)
-    assert m.rotation.shape == truth_shape
+    assert np.asarray(m.rotation).shape == truth_shape
 
 
 def test_wrong_source_type_raises() -> None:
