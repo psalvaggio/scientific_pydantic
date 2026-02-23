@@ -108,9 +108,8 @@ class RotationAdapter:
             self._shape_spec = (None,) * ndim
 
         if not _supports_shape() and (
-            single is False
-            or (shape is not None and len(shape) > 1)
-            or (ndim is not None and ndim > 0)
+            (shape is not None and len(shape) > 1)
+            or (ndim is not None and ndim not in (0, 1))
         ):
             msg = "N-D shape constraints on Rotation require scipy >= 1.17.0"
             raise pydantic.PydanticSchemaGenerationError(msg)
@@ -136,11 +135,14 @@ class RotationAdapter:
         python_schema = core_schema.no_info_plain_validator_function(
             _validate_rotation,
         )
-        if self._shape_spec is not None and _supports_shape():
+        if self._shape_spec is not None:
             spec = self._shape_spec
 
             def _val(x: Rotation) -> Rotation:
-                if validate_shape(x.shape, spec):
+                shape = (
+                    x.shape if _supports_shape() else (() if x.single else (len(x),))
+                )
+                if validate_shape(shape, spec):
                     return x
 
                 err_t = "invalid_rotation_shape"
