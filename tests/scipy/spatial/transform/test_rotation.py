@@ -3,18 +3,22 @@
 from __future__ import annotations
 
 import typing as ty
+from unittest import mock
 
 import numpy as np
 import numpy.testing as npt
 import pydantic
 import pytest
+import scipy
 from pydantic import BaseModel
 from scipy.spatial.transform import Rotation
 
 from scientific_pydantic.scipy.spatial.transform import RotationAdapter
+from scientific_pydantic.version_check import version_lt
 
 IDENTITY_QUAT = [0.0, 0.0, 0.0, 1.0]
 IDENTITY_ROT = Rotation.from_quat(IDENTITY_QUAT)
+SCIPY_LT_1_17 = version_lt(scipy, (1, 17, 0))
 
 
 def assert_rotations_close(a: Rotation, b: Rotation) -> None:
@@ -44,6 +48,7 @@ def test_rotation_passthrough(rot: Rotation) -> None:
     assert_rotations_close(pose.rotation, rot)
 
 
+@pytest.mark.skipif(SCIPY_LT_1_17, reason="N-D Rotations are scipy 1.17.0 and up")
 def test_stacked_rotations_passthrough() -> None:
     """Tests passthrough on a multiple rotation"""
     rot = Rotation.from_euler("z", [[0], [90], [180]], degrees=True)
@@ -271,6 +276,7 @@ def test_ndim1_stacked_accepted() -> None:
         Ndim1(rotation={"quat": IDENTITY_QUAT})
 
 
+@pytest.mark.skipif(SCIPY_LT_1_17, reason="N-D Rotations are scipy 1.17.0 and up")
 @pytest.mark.parametrize(
     "quats",
     [
@@ -288,6 +294,7 @@ def test_batch_quat_accepted(quats: list[list[float]]) -> None:
     assert np.asarray(m.rotation).shape == np.asarray(quats).shape[:-1]
 
 
+@pytest.mark.skipif(SCIPY_LT_1_17, reason="N-D Rotations are scipy 1.17.0 and up")
 @pytest.mark.parametrize(
     ("shape_constraint", "data", "truth_shape", "error"),
     [
@@ -323,6 +330,7 @@ def test_shape_constraint(
             Model(rotation=data)
 
 
+@pytest.mark.skipif(SCIPY_LT_1_17, reason="N-D Rotations are scipy 1.17.0 and up")
 @pytest.mark.parametrize(
     ("data", "truth_shape"),
     [
@@ -355,3 +363,23 @@ def test_wrong_source_type_raises() -> None:
 
         class BadModel(BaseModel):
             rotation: ty.Annotated[int, RotationAdapter()]
+
+
+def test_scipy_without_nd_support() -> None:
+    """Test that scipy without N-D shape support only allows scalar Rotation"""
+    with mock.patch(
+        "scientific_pydantic.scipy.spatial.transform.rotation._supports_shape",
+        return_value=False,
+    ):
+
+        class Valid(pydantic.BaseModel):
+            f0: ty.Annotated[Rotation, RotationAdapter()]
+            f1: ty.Annotated[Rotation, RotationAdapter(single=True)]
+            f2: ty.Annotated[Rotation, RotationAdapter(ndim=0)]
+            f3: ty.Annotated[Rotation, RotationAdapter(shape=())]
+            f4: ty.Annotated[Rotation, RotationAdapter(single=True, ndim=0, shape=())]
+
+        with pytest.raises(pydantic.PydanticSchemaGenerationError):
+
+            class Invalid(pydantic.BaseModel):
+                f0: ty.Annotated[Rotation, RotationAdapter(ndim=2)]

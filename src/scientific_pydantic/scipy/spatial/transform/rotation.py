@@ -12,6 +12,7 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, PydanticCustomError, core_schema
 
 from scientific_pydantic.numpy import NDArrayAdapter
+from scientific_pydantic.version_check import version_lt
 
 if ty.TYPE_CHECKING:
     from scipy.spatial.transform import Rotation
@@ -92,6 +93,7 @@ class RotationAdapter:
         ndim: int | None = None,
         shape: Sequence[EllipsisLiteral | int | range | slice | None] | None = None,
     ) -> None:
+
         from scientific_pydantic.numpy.validators import NDArrayValidator
 
         kwargs = None
@@ -101,6 +103,17 @@ class RotationAdapter:
             kwargs = {"shape": shape}
         elif ndim is not None:
             kwargs = {"ndim": ndim}
+
+        if not _supports_shape():
+            if kwargs is not None and (
+                not kwargs.get("single", True)
+                or kwargs.get("shape", ()) != ()
+                or kwargs.get("ndim", 0) != 0
+            ):
+                msg = "N-D shape constraints on Rotation require scipy >= 1.17.0"
+                raise pydantic.PydanticSchemaGenerationError(msg)
+            kwargs = {"ndim": 0}
+
         self._np_validator = (
             NDArrayValidator.from_kwargs(**kwargs) if kwargs is not None else None
         )
@@ -294,3 +307,10 @@ def _validate_rotation(value: ty.Any) -> Rotation:
         '"quat", "matrix", "rotvec", "mrp", "euler" or "davenport".'
     )
     raise PydanticCustomError(err_t, msg, {"val_t": repr(type(value))})
+
+
+@functools.cache
+def _supports_shape() -> bool:
+    import scipy
+
+    return version_lt(scipy, (1, 17, 0))
