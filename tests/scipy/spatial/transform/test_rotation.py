@@ -87,6 +87,11 @@ def test_stacked_rotations_passthrough() -> None:
             {"matrix": np.eye(3).tolist(), "assume_valid": True},
             [0.0, 0.0, 0.0, 1.0],
             id="matrix_identity_assume_valid",
+            marks=[
+                pytest.mark.skipif(
+                    SCIPY_LT_1_17, reason="assume_valid requires scipy >= 1.17.0"
+                )
+            ],
         ),
         pytest.param(
             {"rotvec": [0, 0, 0]},
@@ -383,3 +388,27 @@ def test_scipy_without_nd_support() -> None:
 
             class Invalid(pydantic.BaseModel):
                 f0: ty.Annotated[Rotation, RotationAdapter(ndim=2)]
+
+
+def test_scipy_without_assume_valid_support() -> None:
+    """Test that we can only pass assume_valid=False if scipy doesn't support it"""
+    with mock.patch(
+        "scientific_pydantic.scipy.spatial.transform.rotation._matrix_supports_assume_valid",
+        return_value=False,
+    ):
+        Basic(
+            rotation={
+                "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                "assume_valid": False,
+            }
+        )
+        with pytest.raises(
+            pydantic.ValidationError,
+            match=r"assume_valid=True is only supported in scipy >= 1\.17\.0",
+        ):
+            Basic(
+                rotation={
+                    "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                    "assume_valid": True,
+                }
+            )

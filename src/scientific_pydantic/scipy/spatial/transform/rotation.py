@@ -12,9 +12,12 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, PydanticCustomError, core_schema
 
 from scientific_pydantic.numpy import NDArrayAdapter
-from scientific_pydantic.version_check import version_lt
+from scientific_pydantic.numpy.validators import validate_shape
+from scientific_pydantic.version_check import version_ge
 
 if ty.TYPE_CHECKING:
+    import types
+
     from scipy.spatial.transform import Rotation
 
     from scientific_pydantic.ellipsis import EllipsisLiteral
@@ -33,7 +36,7 @@ class RotationAdapter:
         }
       - {
           "matrix": array_like, shape (..., 3, 3),
-          "assume_valid": bool (default False),
+          "assume_valid": bool (default False, requires >= 1.17.0),
         }
       - {
           "rotvec": array_like, shape (..., 3),
@@ -94,29 +97,23 @@ class RotationAdapter:
         shape: Sequence[EllipsisLiteral | int | range | slice | None] | None = None,
     ) -> None:
 
-        from scientific_pydantic.numpy.validators import NDArrayValidator
-
-        kwargs = None
+        self._shape_spec: (
+            Sequence[types.EllipsisType | int | range | slice | None] | None
+        ) = None
         if single:
-            kwargs = {"ndim": 0}
+            self._shape_spec = ()
         elif shape is not None:
-            kwargs = {"shape": shape}
+            self._shape_spec = shape
         elif ndim is not None:
-            kwargs = {"ndim": ndim}
+            self._shape_spec = (None,) * ndim
 
-        if not _supports_shape():
-            if kwargs is not None and (
-                not kwargs.get("single", True)
-                or kwargs.get("shape", ()) != ()
-                or kwargs.get("ndim", 0) != 0
-            ):
-                msg = "N-D shape constraints on Rotation require scipy >= 1.17.0"
-                raise pydantic.PydanticSchemaGenerationError(msg)
-            kwargs = {"ndim": 0}
-
-        self._np_validator = (
-            NDArrayValidator.from_kwargs(**kwargs) if kwargs is not None else None
-        )
+        if not _supports_shape() and (
+            single is False
+            or (shape is not None and len(shape) > 1)
+            or (ndim is not None and ndim > 0)
+        ):
+            msg = "N-D shape constraints on Rotation require scipy >= 1.17.0"
+            raise pydantic.PydanticSchemaGenerationError(msg)
 
     def __get_pydantic_core_schema__(
         self,
@@ -139,16 +136,16 @@ class RotationAdapter:
         python_schema = core_schema.no_info_plain_validator_function(
             _validate_rotation,
         )
-        if self._np_validator is not None:
+        if self._shape_spec is not None and _supports_shape():
+            spec = self._shape_spec
 
-            def _val(x: ty.Any) -> ty.Any:
-                try:
-                    self._np_validator(x)  # type: ignore[not-callable]
-                except PydanticCustomError as e:
-                    err_t = "invalid_rotation_shape"
-                    msg = "Rotation object failed shape constraints: {e}"
-                    raise PydanticCustomError(err_t, msg, {"e": str(e)}) from e
-                return x
+            def _val(x: Rotation) -> Rotation:
+                if validate_shape(x.shape, spec):
+                    return x
+
+                err_t = "invalid_rotation_shape"
+                msg = "Rotation object shape {shape} did not match spec {spec}"
+                raise PydanticCustomError(err_t, msg, {"shape": x.shape, "spec": spec})
 
             python_schema = core_schema.chain_schema(
                 [
@@ -193,7 +190,21 @@ def _mapping_validator() -> pydantic.TypeAdapter:  # noqa: C901
         assume_valid: bool = False
 
         def __call__(self) -> Rotation:
-            return Rotation.from_matrix(self.matrix, assume_valid=self.assume_valid)
+            return (
+                Rotation.from_matrix(self.matrix, assume_valid=self.assume_valid)
+                if _matrix_supports_assume_valid()
+                else Rotation.from_matrix(self.matrix)
+            )
+
+        @pydantic.field_validator("assume_valid", mode="after")
+        @classmethod
+        def _validate_assume_valid(cls, val: bool) -> bool:  # noqa: FBT001
+            """We can only pass assume_valid=True if scipy supports it"""
+            if not _matrix_supports_assume_valid() and val:
+                err_t = "not_supported"
+                msg = "assume_valid=True is only supported in scipy >= 1.17.0"
+                raise PydanticCustomError(err_t, msg)
+            return val
 
     class Rotvec(pydantic.BaseModel, extra="forbid"):
         rotvec: ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., 3))]
@@ -313,4 +324,8 @@ def _validate_rotation(value: ty.Any) -> Rotation:
 def _supports_shape() -> bool:
     import scipy
 
-    return version_lt(scipy, (1, 17, 0))
+    return version_ge(scipy, (1, 17, 0))
+
+
+def _matrix_supports_assume_valid() -> bool:
+    return _supports_shape()  # also 1.17.0

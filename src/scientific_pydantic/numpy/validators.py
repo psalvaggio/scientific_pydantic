@@ -1,5 +1,6 @@
 """Validation logic"""
 
+import types
 import typing as ty
 from collections.abc import Sequence
 
@@ -45,6 +46,48 @@ class NDimValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
         return arr
 
 
+def validate_shape(
+    shape: tuple[int, ...],
+    spec: Sequence[types.EllipsisType | int | range | slice | None],
+) -> bool:
+    """Validate the shape on an N-D array
+
+    Parameters
+    ----------
+    shape : tuple[int, ...]
+        The shape to validate
+    spec : Sequence[types.EllipsisType | int | range | slice | None]
+        The shape specification against which to validate
+
+    Returns
+    -------
+    bool
+        Whether the shape matched the spec
+    """
+    spec = list(spec)
+
+    def match(shape_idx: int, arr_idx: int) -> bool:
+        """Return True if spec[shape_idx:] can match arr_shape[arr_idx:]"""
+        if shape_idx == len(spec) and arr_idx == len(shape):
+            return True  # Base case: both exhausted
+        if shape_idx == len(spec):
+            return False  # array dims left but no specs to match them
+        if arr_idx == len(shape):
+            # Remaining specs must all be ellipses (each can match 0 dims)
+            return all(s is ... for s in spec[shape_idx:])
+
+        spec_item = spec[shape_idx]
+        if isinstance(spec_item, types.EllipsisType):
+            # Try matching 0, 1, 2, ... array dims to this ellipsis
+            return any(match(shape_idx + 1, n) for n in range(arr_idx, len(shape) + 1))
+
+        return _matches_spec(shape[arr_idx], spec_item) and match(
+            shape_idx + 1, arr_idx + 1
+        )
+
+    return match(0, 0)
+
+
 class ShapeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
     """Data type for the shape of the array"""
 
@@ -58,33 +101,8 @@ class ShapeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
 
     def __call__(self, arr: NDArray) -> NDArray:
         """Apply shape validation"""
-        shape = list(self.shape)
-        arr_shape = arr.shape
-
-        def match(shape_idx: int, arr_idx: int) -> bool:
-            """Return True if shape[shape_idx:] can match arr_shape[arr_idx:]"""
-            if shape_idx == len(shape) and arr_idx == len(arr_shape):
-                return True  # Base case: both exhausted
-            if shape_idx == len(shape):
-                return False  # array dims left but no specs to match them
-            if arr_idx == len(arr_shape):
-                # Remaining specs must all be ellipses (each can match 0 dims)
-                return all(s is ... for s in shape[shape_idx:])
-
-            spec = shape[shape_idx]
-            if spec is ...:
-                # Try matching 0, 1, 2, ... array dims to this ellipsis
-                for n in range(arr_idx, len(arr_shape) + 1):
-                    if match(shape_idx + 1, n):
-                        return True
-                return False
-
-            return _matches_spec(arr_shape[arr_idx], spec) and match(  # type: ignore[bad-argument-type]
-                shape_idx + 1, arr_idx + 1
-            )
-
-        if not match(0, 0):
-            msg = f"Array shape {arr_shape} does not match spec {shape}"
+        if not validate_shape(arr.shape, self.shape):
+            msg = f"Array shape {arr.shape} does not match spec {self.shape}"
             raise ValueError(msg)
 
         return arr
