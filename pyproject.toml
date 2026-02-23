@@ -71,7 +71,7 @@ docstring-code-format = true
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
     "S101", # asserts allowed in tests
     "ARG", # Unused function args -> fixtures
@@ -88,3 +88,6 @@ addopts = "--cov=scientific_pydantic --cov-report=html --cov-branch"
 exclude_also = [
     "if ty.TYPE_CHECKING:",
 ]
+
+[tool.pyrefly]
+# Nothing to configure, but here to force errors in LSP mode

@@ -1,5 +1,6 @@
 """Validation logic"""
 
+import types
 import typing as ty
 from collections.abc import Sequence
 
@@ -8,6 +9,7 @@ import pydantic
 from numpy.typing import NDArray
 from pydantic_core import PydanticCustomError
 
+from ..ellipsis import EllipsisLiteral
 from ..range import RangeAdapter
 from ..slice import IntSliceAdapter
 from .dtype_adapter import DTypeAdapter
@@ -23,11 +25,9 @@ class DTypeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
         try:
             return arr.astype(self.dtype)
         except (ValueError, TypeError) as e:
-            err = PydanticCustomError(
-                "dtype_error",
-                f"the array could not be converted to {self.dtype}",
-            )
-            raise err from e
+            err_t = "dtype_error"
+            msg = "the array could not be converted to {dtype}"
+            raise PydanticCustomError(err_t, msg, {"dtype": self.dtype}) from e
 
 
 class NDimValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
@@ -38,73 +38,92 @@ class NDimValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
     def __call__(self, arr: NDArray) -> NDArray:
         """Apply ndim validation"""
         if arr.ndim != self.ndim:
-            err = PydanticCustomError(
-                "ndim_error",
-                f"the array had {arr.ndim} dimension(s), expected {self.ndim}",
+            err_t = "ndim_error"
+            msg = "the array had {arr_ndim} dimension(s), expected {ndim}"
+            raise PydanticCustomError(
+                err_t, msg, {"arr_ndim": arr.ndim, "ndim": self.ndim}
             )
-            raise err
         return arr
+
+
+def validate_shape(
+    shape: tuple[int, ...],
+    spec: Sequence[types.EllipsisType | int | range | slice | None],
+) -> bool:
+    """Validate the shape on an N-D array
+
+    Parameters
+    ----------
+    shape : tuple[int, ...]
+        The shape to validate
+    spec : Sequence[types.EllipsisType | int | range | slice | None]
+        The shape specification against which to validate
+
+    Returns
+    -------
+    bool
+        Whether the shape matched the spec
+    """
+    spec = list(spec)
+
+    def match(shape_idx: int, arr_idx: int) -> bool:
+        """Return True if spec[shape_idx:] can match arr_shape[arr_idx:]"""
+        if shape_idx == len(spec) and arr_idx == len(shape):
+            return True  # Base case: both exhausted
+        if shape_idx == len(spec):
+            return False  # array dims left but no specs to match them
+        if arr_idx == len(shape):
+            # Remaining specs must all be ellipses (each can match 0 dims)
+            return all(s is ... for s in spec[shape_idx:])
+
+        spec_item = spec[shape_idx]
+        if isinstance(spec_item, types.EllipsisType):
+            # Try matching 0, 1, 2, ... array dims to this ellipsis
+            return any(match(shape_idx + 1, n) for n in range(arr_idx, len(shape) + 1))
+
+        return _matches_spec(shape[arr_idx], spec_item) and match(
+            shape_idx + 1, arr_idx + 1
+        )
+
+    return match(0, 0)
 
 
 class ShapeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
     """Data type for the shape of the array"""
 
     shape: Sequence[
-        int
+        EllipsisLiteral
+        | int
         | ty.Annotated[range, RangeAdapter()]
         | ty.Annotated[slice, IntSliceAdapter]
-        | None
+        | None,
     ]
 
     def __call__(self, arr: NDArray) -> NDArray:
         """Apply shape validation"""
-        if len(self.shape) != arr.ndim:
-            err = PydanticCustomError(
-                "ndim_error",
-                f"the array had {arr.ndim} dimension(s), expected {len(self.shape)}",
-            )
-            raise err
-
-        for i, constraint in enumerate(self.shape):
-            actual_size = arr.shape[i]
-
-            if isinstance(constraint, int):  # Exact size required
-                if actual_size != constraint:
-                    err = PydanticCustomError(
-                        "shape_error",
-                        f"Dimension {i}: expected size {constraint}, got {actual_size}",
-                    )
-                    raise err
-            elif isinstance(constraint, range):  # Size must be in range
-                if actual_size not in constraint:
-                    err = PydanticCustomError(
-                        "shape_error",
-                        f"Dimension {i}: size {actual_size} not in range {constraint}",
-                    )
-                    raise err
-            elif isinstance(constraint, slice):  # Convert slice to range and check
-                start = constraint.start if constraint.start is not None else 0
-                stop = constraint.stop if constraint.stop is not None else float("inf")
-                step = constraint.step if constraint.step is not None else 1
-
-                # Check if actual_size would be in the range defined by slice
-                if actual_size < start or actual_size >= stop:
-                    err = PydanticCustomError(
-                        "shape_error",
-                        "Dimension {i}: size {actual_size} not in slice {constraint}",
-                    )
-                    raise err
-                if step != 1 and (actual_size - start) % step != 0:
-                    err = PydanticCustomError(
-                        "shape_error",
-                        f"Dimension {i}: size {actual_size} does not satisfy "
-                        f"step {step} of slice {constraint}",
-                    )
-                    raise err
-
-            # Otherwise it was None, so any size is fine
+        if not validate_shape(arr.shape, self.shape):
+            msg = f"Array shape {arr.shape} does not match spec {self.shape}"
+            raise ValueError(msg)
 
         return arr
+
+
+def _matches_spec(dim_size: int, spec: int | range | slice | None) -> bool:
+    if spec is None:
+        return True
+    if isinstance(spec, int):
+        return dim_size == spec
+    if isinstance(spec, range):
+        return dim_size in spec
+    if isinstance(spec, slice):
+        start = spec.start if spec.start is not None else 0
+        stop = spec.stop
+        step = spec.step if spec.step is not None else 1
+        if stop is None:
+            return dim_size >= start and (dim_size - start) % step == 0
+        return start <= dim_size < stop and (dim_size - start) % step == 0
+    msg = f"Unknown shape spec type: {type(spec)}"
+    raise ValueError(msg)
 
 
 class GtValidator(pydantic.BaseModel, frozen=True, extra="forbid"):

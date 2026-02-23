@@ -168,7 +168,9 @@ class UnitAdapter:
             )
             raise pydantic.PydanticSchemaGenerationError(msg)
 
-        validators = [core_schema.no_info_plain_validator_function(_validate_unit)]
+        validators: list[core_schema.CoreSchema] = [
+            core_schema.no_info_plain_validator_function(_validate_unit)
+        ]
         if self._equivalency_validator is not None:
             validators.append(
                 core_schema.no_info_plain_validator_function(
