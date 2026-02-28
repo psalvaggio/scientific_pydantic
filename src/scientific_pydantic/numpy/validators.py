@@ -126,6 +126,59 @@ def _matches_spec(dim_size: int, spec: int | range | slice | None) -> bool:
     raise ValueError(msg)
 
 
+# We are being intentionally vague with the types here to allow for subclasses
+# that support different comparison operators.
+ArrT = ty.TypeVar("ArrT", bound=np.ndarray)
+
+
+def validate_all_gt(arr: ArrT, bound: ty.Any) -> ArrT:
+    """Assert all elements in `arr` are > `bound`"""
+    if not np.all(arr > bound):
+        err = PydanticCustomError(
+            "bounds_error",
+            "Not all elements were > {bound}",
+            {"bound": bound},
+        )
+        raise err
+    return arr
+
+
+def validate_all_ge(arr: ArrT, bound: ty.Any) -> ArrT:
+    """Assert all elements in `arr` are >= `bound`"""
+    if not np.all(arr >= bound):
+        err = PydanticCustomError(
+            "bounds_error",
+            "Not all elements were >= {bound}",
+            {"bound": bound},
+        )
+        raise err
+    return arr
+
+
+def validate_all_lt(arr: ArrT, bound: ty.Any) -> ArrT:
+    """Assert all elements in `arr` are < `bound`"""
+    if not np.all(arr < bound):
+        err = PydanticCustomError(
+            "bounds_error",
+            "Not all elements were < {bound}",
+            {"bound": bound},
+        )
+        raise err
+    return arr
+
+
+def validate_all_le(arr: ArrT, bound: ty.Any) -> ArrT:
+    """Assert all elements in `arr` are <= `bound`"""
+    if not np.all(arr <= bound):
+        err = PydanticCustomError(
+            "bounds_error",
+            "Not all elements were <= {bound}",
+            {"bound": bound},
+        )
+        raise err
+    return arr
+
+
 class GtValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
     """Validator for a bounds check"""
 
@@ -133,14 +186,7 @@ class GtValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
 
     def __call__(self, arr: NDArray) -> NDArray:
         """Apply gt validation"""
-        if not np.all(arr > self.gt):
-            err = PydanticCustomError(
-                "bounds_error",
-                "Not all elements were greater than {gt}",
-                {"gt": self.gt},
-            )
-            raise err
-        return arr
+        return validate_all_gt(arr, self.gt)
 
 
 class GeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
@@ -150,14 +196,7 @@ class GeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
 
     def __call__(self, arr: NDArray) -> NDArray:
         """Apply ge validation"""
-        if not np.all(arr >= self.ge):
-            err = PydanticCustomError(
-                "bounds_error",
-                "Not all elements were greater than or equal to {ge}",
-                {"ge": self.ge},
-            )
-            raise err
-        return arr
+        return validate_all_ge(arr, self.ge)
 
 
 class LtValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
@@ -167,14 +206,7 @@ class LtValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
 
     def __call__(self, arr: NDArray) -> NDArray:
         """Apply lt validation"""
-        if not np.all(arr < self.lt):
-            err = PydanticCustomError(
-                "bounds_error",
-                "Not all elements were less than {lt}",
-                {"lt": self.lt},
-            )
-            raise err
-        return arr
+        return validate_all_lt(arr, self.lt)
 
 
 class LeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
@@ -184,14 +216,7 @@ class LeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
 
     def __call__(self, arr: NDArray) -> NDArray:
         """Apply le validation"""
-        if not np.all(arr <= self.le):
-            err = PydanticCustomError(
-                "bounds_error",
-                "Not all elements were less than or equal to {le}",
-                {"le": self.le},
-            )
-            raise err
-        return arr
+        return validate_all_le(arr, self.le)
 
 
 class ClipValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
