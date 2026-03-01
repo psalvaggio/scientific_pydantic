@@ -15,6 +15,12 @@ if ty.TYPE_CHECKING:
 class NDArrayAdapter:
     """Pydantic type adapter for numpy `ndarray`s with validation constraints.
 
+    Inputs can be coerced from:
+
+    1. `ndarray` - Identity
+    2. `ArrayLike` - Any object that can be converted to an `ndarray` via
+       [`np.asarray`](https://numpy.org/doc/stable/reference/generated/numpy.asarray.html).
+
     Shape specifiers for arrays are a sequence of entries, which support the
     options:
 
