@@ -348,9 +348,7 @@ def test_json_schema() -> None:
 def test_invalid_adapter_params(kwargs: dict[str, ty.Any], match: str) -> None:
     """Test invalid annotations"""
     with pytest.raises(pydantic.PydanticSchemaGenerationError, match=match):
-
-        class Model(pydantic.BaseModel):
-            field: ty.Annotated[u.Quantity, QuantityAdapter(**kwargs)]
+        QuantityAdapter(**kwargs)
 
 
 def test_serialize_as_unit() -> None:
