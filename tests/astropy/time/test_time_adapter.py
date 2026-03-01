@@ -239,3 +239,72 @@ def test_serialization_json(value: Time, truth: dict[str, ty.Any]) -> None:
     json = m.model_dump(mode="json")
     assert isinstance(json["field"], dict)
     assert json["field"] == truth
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "value", "result"),
+    [
+        pytest.param(
+            {"scalar": True},
+            "2026-03-01T13:27:00",
+            Time("2026-03-01T13:27:00"),
+            id="scalar-True-pass",
+        ),
+        pytest.param(
+            {"scalar": True},
+            ["2026-03-01T13:27:00"],
+            "scalar_error",
+            id="scalar-True-fail",
+        ),
+        pytest.param(
+            {"scalar": False},
+            ["2026-03-01T13:27:00"],
+            Time(["2026-03-01T13:27:00"]),
+            id="scalar-False-pass",
+        ),
+        pytest.param(
+            {"scalar": False},
+            "2026-03-01T13:27:00",
+            "scalar_error",
+            id="scalar-False-fail",
+        ),
+        pytest.param(
+            {"ndim": 2},
+            [["2026-03-01T13:27:00"]],
+            Time([["2026-03-01T13:27:00"]]),
+            id="ndim-2-pass",
+        ),
+        pytest.param(
+            {"ndim": 2},
+            ["2026-03-01T13:27:00"],
+            "ndim_error",
+            id="ndim-2-fail",
+        ),
+        pytest.param(
+            {"shape": [1, 2]},
+            [["2026-03-01T13:27:00", "2026-03-01T13:27:00"]],
+            Time([["2026-03-01T13:27:00", "2026-03-01T13:27:00"]]),
+            id="shape-[1,2]-pass",
+        ),
+        pytest.param(
+            {"shape": [1, 2]},
+            [["2026-03-01T13:27:00"]],
+            "shape_error",
+            id="shape-[1,2]-fail",
+        ),
+    ],
+)
+def test_contraints(
+    kwargs: dict[str, ty.Any], value: ty.Any, result: Time | str
+) -> None:
+    """Test theshape constraints on Time's"""
+
+    class Model(pydantic.BaseModel):
+        field: ty.Annotated[Time, TimeAdapter(**kwargs)]
+
+    if isinstance(result, Time):
+        m = Model(field=value)
+        assert_times_close(m.field, result)
+    else:
+        with pytest.raises(pydantic.ValidationError, match=result):
+            Model(field=value)

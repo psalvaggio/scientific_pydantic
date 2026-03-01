@@ -2,23 +2,57 @@
 
 from __future__ import annotations
 
+import dataclasses
 import typing as ty
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from pydantic_core import PydanticCustomError, core_schema
 
 if ty.TYPE_CHECKING:
+    import types
+
     from astropy.time import Time
     from pydantic import GetCoreSchemaHandler
 
 
 class TimeAdapter:
-    """Pydantic adapter for astropy.time.Time"""
+    """Pydantic adapter for astropy.time.Time
+
+    Parameters
+    ----------
+    scalar : bool
+        If True, only scalar times will be accepted. If False, only vector times
+        will be accepted. If None, no scalar constraints are enforced, unless
+        `ndim` or `shape` are provided.
+    ndim : int | None
+        If given, the dimensionality of the time must match this value. Must
+        be >= 0.
+    shape : Sequence[Ellipsis | int | range | slice | None] | None
+        Shape specifier for the given time(s). See `NDArrayValidator` for a
+        description of how this works.
+
+    """
 
     def __init__(
         self,
+        *,
+        scalar: bool | None = None,
+        ndim: int | None = None,
+        shape: Sequence[types.EllipsisType | int | range | slice | None] | None = None,
     ) -> None:
-        pass
+        from ..validators import ArrayShapeValidator
+
+        @dataclasses.dataclass
+        class CtorValidators:
+            shape: ArrayShapeValidator
+            ge: ty.Callable[[Time], Time] | None = None
+            gt: ty.Callable[[Time], Time] | None = None
+            le: ty.Callable[[Time], Time] | None = None
+            lt: ty.Callable[[Time], Time] | None = None
+
+        self._validators = CtorValidators(
+            shape=ArrayShapeValidator(scalar=scalar, ndim=ndim, shape=shape),
+        )
 
     def __get_pydantic_core_schema__(
         self,
@@ -27,9 +61,18 @@ class TimeAdapter:
     ) -> core_schema.CoreSchema:
         """Get the pydantic schema for this type"""
         to_time = core_schema.no_info_plain_validator_function(_validate_time)
+        validators = core_schema.chain_schema(
+            [to_time]
+            + [
+                core_schema.no_info_plain_validator_function(func)
+                for field in dataclasses.fields(self._validators)
+                if (func := getattr(self._validators, field.name)) is not None
+            ]
+        )
+
         return core_schema.json_or_python_schema(
-            json_schema=to_time,
-            python_schema=to_time,
+            json_schema=validators,
+            python_schema=validators,
             serialization=core_schema.plain_serializer_function_ser_schema(
                 _serialize_json,
                 when_used="json-unless-none",

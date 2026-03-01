@@ -66,7 +66,7 @@ class QuantityAdapter:
         `equivalent_unit` is used (if provided).
     """
 
-    def __init__(  # noqa: PLR0913, C901
+    def __init__(  # noqa: PLR0913
         self,
         equivalent_unit: u.UnitBase | None = None,
         *,
@@ -86,14 +86,13 @@ class QuantityAdapter:
         import numpy as np
 
         from scientific_pydantic.numpy.validators import (
-            NDimValidator,
-            ShapeValidator,
             validate_all_ge,
             validate_all_gt,
             validate_all_le,
             validate_all_lt,
         )
 
+        from ..validators import ArrayShapeValidator
         from .validators import (
             EquivalencyValidator,
             PhysicalTypeValidator,
@@ -103,11 +102,9 @@ class QuantityAdapter:
 
         @dataclasses.dataclass
         class CtorValidators:
+            shape: ArrayShapeValidator
             equivalency: EquivalencyValidator | None = None
             physical_type: PhysicalTypeValidator | None = None
-            scalar: ScalarValidator | None = None
-            ndim: NDimValidator | None = None
-            shape: ShapeValidator | None = None
             ge: ty.Callable[[u.Quantity], u.Quantity] | None = None
             gt: ty.Callable[[u.Quantity], u.Quantity] | None = None
             le: ty.Callable[[u.Quantity], u.Quantity] | None = None
@@ -115,26 +112,6 @@ class QuantityAdapter:
             clip: ty.Callable[[u.Quantity], u.Quantity] | None = None
 
         validators: dict[str, ty.Callable[[u.Quantity], u.Quantity]] = {}
-
-        # Handle contradictions in the shape arguments
-        if scalar is not None:
-            if scalar:
-                if ndim is not None and ndim != 0:
-                    msg = f"scalar=True and ndim={ndim} contradict"
-                    raise PydanticSchemaGenerationError(msg)
-                ndim = None  # ndim = 0 is redundant
-                if shape is not None and shape != ():
-                    msg = f"scalar=True and shape={shape} contradict"
-                    raise PydanticSchemaGenerationError(msg)
-                shape = None  # shape = () is redundant
-            else:
-                if ndim == 0:
-                    msg = "scalar=False and ndim=0 contradict"
-                    raise PydanticSchemaGenerationError(msg)
-                if shape == ():
-                    msg = "scalar=False and shape=() contradict"
-                    raise PydanticSchemaGenerationError(msg)
-            validators["scalar"] = ScalarValidator(scalar=scalar)
 
         def apply_unit_to_bound(
             x: ArrayLike | u.Quantity | None, name: str
@@ -186,8 +163,7 @@ class QuantityAdapter:
             physical_type=PhysicalTypeValidator(validate_physical_type(physical_type))
             if physical_type is not None
             else None,
-            ndim=NDimValidator(ndim=ndim) if ndim is not None else None,
-            shape=ShapeValidator(shape=shape) if shape is not None else None,
+            shape=ArrayShapeValidator(scalar=scalar, ndim=ndim, shape=shape),
             **validators,  # type: ignore[bad-argument-type]
         )
 
@@ -307,19 +283,3 @@ def _validate_quantity(value: ty.Any) -> u.Quantity:
         err_t = "invalid_quantity"
         msg = "Cannot construct a quantity from the given value: {e}"
         raise PydanticCustomError(err_t, msg, {"e": str(e)}) from e
-
-
-class ScalarValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
-    """Validator for the scalar property on a Quantity"""
-
-    scalar: bool
-
-    def __call__(self, q: u.Quantity) -> u.Quantity:
-        """Apply scalar validation"""
-        if q.isscalar != self.scalar:
-            err_t = "scalar_error"
-            msg = "Expected isscalar to be {exp}, was {actual}"
-            raise PydanticCustomError(
-                err_t, msg, {"exp": self.scalar, "actual": q.isscalar}
-            )
-        return q

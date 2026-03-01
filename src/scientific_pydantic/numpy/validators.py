@@ -33,12 +33,22 @@ class DTypeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
             raise PydanticCustomError(err_t, msg, {"dtype": self.dtype}) from e
 
 
+class HasNdim(ty.Protocol):
+    """Protocol for an object that has a .ndim property"""
+
+    @property
+    def ndim(self) -> int: ...  # noqa: D102
+
+
+HasNdimT = ty.TypeVar("HasNdimT", bound=HasNdim)
+
+
 class NDimValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
     """Validator for the number of dimensions"""
 
     ndim: int = pydantic.Field(ge=0)
 
-    def __call__(self, arr: ArrT) -> ArrT:
+    def __call__(self, arr: HasNdim) -> HasNdim:
         """Apply ndim validation"""
         if arr.ndim != self.ndim:
             err_t = "ndim_error"
@@ -91,6 +101,16 @@ def validate_shape(
     return match(0, 0)
 
 
+class HasShape(ty.Protocol):
+    """Protocol for an object that has a .shape property"""
+
+    @property
+    def shape(self) -> tuple[int, ...]: ...  # noqa: D102
+
+
+HasShapeT = ty.TypeVar("HasShapeT", bound=HasShape)
+
+
 class ShapeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
     """Data type for the shape of the array"""
 
@@ -102,11 +122,14 @@ class ShapeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
         | None,
     ]
 
-    def __call__(self, arr: ArrT) -> ArrT:
+    def __call__(self, arr: HasShapeT) -> HasShapeT:
         """Apply shape validation"""
         if not validate_shape(arr.shape, self.shape):
-            msg = f"Array shape {arr.shape} does not match spec {self.shape}"
-            raise ValueError(msg)
+            err_t = "shape_error"
+            msg = "Array shape {actual} does not match spec {exp}"
+            raise PydanticCustomError(
+                err_t, msg, {"actual": arr.shape, "exp": self.shape}
+            )
 
         return arr
 
