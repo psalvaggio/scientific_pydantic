@@ -1,5 +1,5 @@
 """Pydantic adaptors for astropy"""
 
-from . import units
+from . import time, units
 
-__all__ = ["units"]
+__all__ = ["time", "units"]
