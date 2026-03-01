@@ -10,6 +10,32 @@ if ty.TYPE_CHECKING:
     import astropy.units as u
 
 
+UnitOrQuantity = ty.TypeVar("UnitOrQuantity", "u.UnitBase", "u.Quantity")
+
+
+def validate_unit(value: ty.Any) -> u.UnitBase:
+    """Validate and coerce a value to an astropy Unit."""
+    import astropy.units as u
+
+    if isinstance(value, u.UnitBase):
+        return value
+    if isinstance(value, str):
+        try:
+            return u.Unit(value)
+        except ValueError as exc:
+            err_t = "astropy_unit_parse_error"
+            msg = "Could not parse {value} as an astropy unit: {error}"
+            raise pydantic_core.PydanticCustomError(
+                err_t, msg, {"value": value, "error": str(exc)}
+            ) from exc
+
+    err_t = "astropy_unit_type_error"
+    msg = "Expected a string or astropy UnitBase instance, got {type_name}"
+    raise pydantic_core.PydanticCustomError(
+        err_t, msg, {"type_name": type(value).__name__}
+    )
+
+
 class EquivalencyValidator:
     """Validator for unit equivalency
 
@@ -47,23 +73,26 @@ class EquivalencyValidator:
         """Custom equivalencies for the equivalency check"""
         return self._equivalencies
 
-    def __call__(self, unit: u.UnitBase) -> u.UnitBase:
+    def __call__(self, val: UnitOrQuantity) -> UnitOrQuantity:
         """Validate the given unit for equivalency
 
         Parameters
         ----------
-        unit : astropy.units.UnitBase
-            The unit to validate
+        val : astropy.units.UnitBase | astorpy.units.Quantity
+            The unit/quantity to validate
 
         Returns
         -------
-        astropy.units.UnitBase
-            The input ``unit`` (for validator chaining)
+        astropy.units.UnitBase | astorpy.units.Quantity
+            The input ``val`` (for validator chaining)
         """
+        import astropy.units as u
+
+        unit = ty.cast("u.UnitBase", val.unit) if isinstance(val, u.Quantity) else val
         if self.equivalent_unit is None or unit.is_equivalent(
             self.equivalent_unit, equivalencies=self.equivalencies
         ):
-            return unit
+            return val
 
         equiv_hint = (
             f" (with equivalencies: {self.equivalencies})"
@@ -107,9 +136,6 @@ def validate_physical_type(value: ty.Any) -> u.PhysicalType:
     raise pydantic_core.PydanticCustomError(
         err_t, msg, {"type_name": type(value).__name__}
     )
-
-
-UnitOrQuantity = ty.TypeVar("UnitOrQuantity", "u.UnitBase", "u.Quantity")
 
 
 class PhysicalTypeValidator:

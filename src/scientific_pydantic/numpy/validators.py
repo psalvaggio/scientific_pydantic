@@ -14,6 +14,9 @@ from ..range import RangeAdapter
 from ..slice import IntSliceAdapter
 from .dtype_adapter import DTypeAdapter
 
+# We aren't using NDArray here because we want to allow for subclasses of ndarray
+ArrT = ty.TypeVar("ArrT", bound=np.ndarray)
+
 
 class DTypeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
     """Validator for the array's data type"""
@@ -35,7 +38,7 @@ class NDimValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
 
     ndim: int = pydantic.Field(ge=0)
 
-    def __call__(self, arr: NDArray) -> NDArray:
+    def __call__(self, arr: ArrT) -> ArrT:
         """Apply ndim validation"""
         if arr.ndim != self.ndim:
             err_t = "ndim_error"
@@ -99,7 +102,7 @@ class ShapeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
         | None,
     ]
 
-    def __call__(self, arr: NDArray) -> NDArray:
+    def __call__(self, arr: ArrT) -> ArrT:
         """Apply shape validation"""
         if not validate_shape(arr.shape, self.shape):
             msg = f"Array shape {arr.shape} does not match spec {self.shape}"
@@ -126,9 +129,7 @@ def _matches_spec(dim_size: int, spec: int | range | slice | None) -> bool:
     raise ValueError(msg)
 
 
-# We are being intentionally vague with the types here to allow for subclasses
-# that support different comparison operators.
-ArrT = ty.TypeVar("ArrT", bound=np.ndarray)
+# bound is Any because we aren't assuming the dtype of the array here
 
 
 def validate_all_gt(arr: ArrT, bound: ty.Any) -> ArrT:
@@ -184,7 +185,7 @@ class GtValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
 
     gt: float
 
-    def __call__(self, arr: NDArray) -> NDArray:
+    def __call__(self, arr: ArrT) -> ArrT:
         """Apply gt validation"""
         return validate_all_gt(arr, self.gt)
 
@@ -194,7 +195,7 @@ class GeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
 
     ge: float
 
-    def __call__(self, arr: NDArray) -> NDArray:
+    def __call__(self, arr: ArrT) -> ArrT:
         """Apply ge validation"""
         return validate_all_ge(arr, self.ge)
 
@@ -204,7 +205,7 @@ class LtValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
 
     lt: float
 
-    def __call__(self, arr: NDArray) -> NDArray:
+    def __call__(self, arr: ArrT) -> ArrT:
         """Apply lt validation"""
         return validate_all_lt(arr, self.lt)
 
@@ -214,7 +215,7 @@ class LeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
 
     le: float
 
-    def __call__(self, arr: NDArray) -> NDArray:
+    def __call__(self, arr: ArrT) -> ArrT:
         """Apply le validation"""
         return validate_all_le(arr, self.le)
 

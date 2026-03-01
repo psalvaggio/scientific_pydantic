@@ -9,31 +9,7 @@ if ty.TYPE_CHECKING:
     import astropy.units as u
 
 import pydantic
-import pydantic_core
 from pydantic_core import core_schema
-
-
-def _validate_unit(value: ty.Any) -> u.UnitBase:
-    """Validate and coerce a value to an astropy Unit."""
-    import astropy.units as u
-
-    if isinstance(value, u.UnitBase):
-        return value
-    if isinstance(value, str):
-        try:
-            return u.Unit(value)
-        except ValueError as exc:
-            err_t = "astropy_unit_parse_error"
-            msg = "Could not parse {value} as an astropy unit: {error}"
-            raise pydantic_core.PydanticCustomError(
-                err_t, msg, {"value": value, "error": str(exc)}
-            ) from exc
-
-    err_t = "astropy_unit_type_error"
-    msg = "Expected a string or astropy UnitBase instance, got {type_name}"
-    raise pydantic_core.PydanticCustomError(
-        err_t, msg, {"type_name": type(value).__name__}
-    )
 
 
 class UnitAdapter:
@@ -108,6 +84,8 @@ class UnitAdapter:
         """Get the pydantic schema for this type"""
         import astropy.units as u
 
+        from .validators import validate_unit
+
         del handler
 
         if source_type is not u.UnitBase:
@@ -118,7 +96,7 @@ class UnitAdapter:
             raise pydantic.PydanticSchemaGenerationError(msg)
 
         validators: list[core_schema.CoreSchema] = [
-            core_schema.no_info_plain_validator_function(_validate_unit)
+            core_schema.no_info_plain_validator_function(validate_unit)
         ]
         if (equiv_val := self._validators.equivalency) is not None:
             validators.append(core_schema.no_info_plain_validator_function(equiv_val))
