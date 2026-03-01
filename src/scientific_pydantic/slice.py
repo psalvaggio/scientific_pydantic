@@ -37,7 +37,7 @@ class SliceAdapter:
        conditions for an `str` encoding are not met.
     4. `Sequence` - A sequence of length 1, 2 or 3 with generic elements.
 
-    A public alias [IntSliceAdapter](scientific_pydantic.IntSliceAdapter) is
+    A public alias [IntSliceAdapter][scientific_pydantic.IntSliceAdapter] is
     exposed for `SliceAdapter(int | None)`.
 
     Parameters

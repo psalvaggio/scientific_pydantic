@@ -13,25 +13,67 @@ if ty.TYPE_CHECKING:
 
 
 class NDArrayAdapter:
-    """Pydantic type adapter for numpy ndarrays with validation constraints.
+    """Pydantic type adapter for numpy `ndarray`s with validation constraints.
 
-    Usage:
-        class MyModel(BaseModel):
-            field: Annotated[
-                np.ndarray,
-                NDArrayAdapter(shape=(3, None), dtype=float)
-            ]
+    Shape specifiers for arrays are a sequence of entries, which support the
+    options:
+
+    - `Ellipsis`/`...` - A wildcard match that matches any number of dimensions
+      with any size. Multiple can be used in a shape specifier.
+    - `int` - The corresponding dimension of the array must have exactly this
+      size.
+    - `range` - The corresponding dimension of the array must have a size that
+      is in this `range`.
+    - `slice` - The corresponding dimension of the array must have a size that
+      is in this `slice`. A `None` in the start or stop of the `slice` indicates
+      that there is no lower or upper bound, respectively, for the dimension
+      size.
+    - `None` - The corresponding dimension must exist, but no constraint is
+      applied to the size.
+
+    For instance, a shape specifier of:
+    ```python
+    (..., 3, None, range(1, 3), slice(3, None))
+    ```
+    would indicate the array must have at least 4 dimensions, where the last 4
+    dimensions must be of size 4, anything, 1 or 2, and at least 3.
 
     Parameters
     ----------
-    dtype: "type | np.dtype | str | None" = None,
-    ndim: int | None = None,
-    shape: Sequence[Ellipsis | int | range | slice | None] | None = None,
-    gt: float | None = None,
-    ge: float | None = None,
-    lt: float | None = None,
-    le: float | None = None,
-    clip: tuple[float | None, float | None] = (None, None),
+    dtype
+        If given, the array will be coerced into this data type via `.astype()`.
+    ndim
+        If given, the array must have this dimensionality.
+    shape
+        If given a shape specifier for the array.
+    gt
+        If given, all elements in the array must be `>` this value.
+    ge
+        If given, all elements in the array must be `>=` this value.
+    lt
+        If given, all elements in the array must be `<` this value.
+    le
+        If given, all elements in the array must be `<=` this value.
+    clip
+        If not `(None, None)`, the array will be passed through
+        `numpy.clip(array, clip[0], clip[1])` to bound the values.
+
+    Examples
+    --------
+    >>> import pydantic
+    >>> import numpy as np
+    >>> from scientific_pydantic.numpy import (
+    ...     NDArrayAdapter,
+    ... )  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> class Model(pydantic.BaseModel):
+    ...     a: ty.Annotated[
+    ...         np.ndarray, NDArrayAdapter()
+    ...     ]  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> Model(a=[[1, 2], [3, 4]])
+    Model(a=array([[1, 2],
+           [3, 4]]))
     """
 
     def __init__(  # noqa: PLR0913
