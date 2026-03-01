@@ -14,28 +14,29 @@ from ..numpy.validators import NDArrayValidator
 T = ty.TypeVar("T")
 
 
+class CoordinateBounds(pydantic.BaseModel):
+    """Bounds checks for coordinates"""
+
+    gt: float | None = pydantic.Field(
+        default=None, description="All coordinates must be > this value"
+    )
+    ge: float | None = pydantic.Field(
+        default=None, description="All coordinates must be >= this value"
+    )
+    lt: float | None = pydantic.Field(
+        default=None, description="All coordinates must be < this value"
+    )
+    le: float | None = pydantic.Field(
+        default=None, description="All coordinates must be <= this value"
+    )
+
+    def __call__(self, coordinates: ArrayLike) -> NDArray:
+        """Validate the bounds on the given coordinates"""
+        return NDArrayValidator.from_kwargs(**self.model_dump())(coordinates)
+
+
 class GeometryConstraints(pydantic.BaseModel):
     """Validation constraints that can be applied to shapely geometries"""
-
-    class CoordinateBounds(pydantic.BaseModel):
-        """Bounds checks for coordinates"""
-
-        gt: float | None = pydantic.Field(
-            default=None, description="All coordinates must be > this value"
-        )
-        ge: float | None = pydantic.Field(
-            default=None, description="All coordinates must be >= this value"
-        )
-        lt: float | None = pydantic.Field(
-            default=None, description="All coordinates must be < this value"
-        )
-        le: float | None = pydantic.Field(
-            default=None, description="All coordinates must be <= this value"
-        )
-
-        def __call__(self, coordinates: ArrayLike) -> NDArray:
-            """Validate the bounds on the given coordinates"""
-            return NDArrayValidator.from_kwargs(**self.model_dump())(coordinates)
 
     dimensionality: ty.Literal[2, 3] | None = pydantic.Field(
         default=None,
@@ -129,9 +130,65 @@ class GeometryConstraints(pydantic.BaseModel):
 
 
 class GeometryAdapter:
-    """A pydantic adapter for shapely geometry"""
+    """A pydantic adapter for shapely geometry
 
-    CoordinateBounds: ty.ClassVar[type] = GeometryConstraints.CoordinateBounds
+    This adapter can be used with the various shapely
+    [Geometry Types](https://shapely.readthedocs.io/en/latest/geometry.html#geometry-types).
+
+    This adapter will constrain the type of geometry accepted by the field
+    according to the type annotation. For example:
+
+    ```python
+    ty.Annotated[shapely.Polygon, GeometryAdapter()]
+    ```
+
+    would accept only `Polygon`s. Unions are also accepted, as well as
+    `shapely.geometry.base.BaseGeometry`, which would accept any of the geometry
+    types.
+
+    Inputs can be coerced from:
+
+    1. Geometry types - Identity.
+    2. `str` - A GeoJSON or WKT representation of the geometry
+    3. `Mapping` - A GeoJSON mapping
+    4. `__geo_interface__` - Any Python object which implements
+       `.__geo_interface__`. This is used for the JSON serialization.
+
+    Parameters
+    ----------
+    dimensionality
+        If given, constrains the accepted geometry to either have (3) or not
+        have (2) a third dimension to all coordinates.
+    x_bounds
+        If given, bounds for the x-coordinates of the geometry.
+    y_bounds
+        If given, bounds for the y-coordinates of the geometry.
+    z_bounds
+        If given, bounds for the z-coordinates of the geometry.
+
+    Examples
+    --------
+    >>> import pydantic
+    >>> import shapely
+    >>> from scientific_pydantic.shapely import (
+    ...     GeometryAdapter,
+    ... )  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> class Model(pydantic.BaseModel):
+    ...     mp: ty.Annotated[
+    ...         shapely.MultiPoint, GeometryAdapter()
+    ...     ]  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> Model(
+    ...     mp={
+    ...         "type": "MultiPoint",
+    ...         "coordinates": [[1, 2], [3, 4]],
+    ...     },
+    ... )
+    Model(mp=<MULTIPOINT ((1 2), (3 4))>)
+    """
+
+    CoordinateBounds: ty.ClassVar[type] = CoordinateBounds
 
     def __init__(
         self,

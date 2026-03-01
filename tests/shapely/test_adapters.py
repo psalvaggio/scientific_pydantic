@@ -12,6 +12,7 @@ import shapely.testing
 from numpy.typing import ArrayLike
 
 from scientific_pydantic.shapely.adapters import (
+    CoordinateBounds,
     GeometryAdapter,
     GeometryConstraints,
 )
@@ -31,7 +32,7 @@ AnyShapelyGeometry = ty.Annotated[shapely.geometry.base.BaseGeometry, GeometryAd
 )
 def test_coordinate_bounds_valid(params: dict[str, ty.Any], data: ArrayLike) -> None:
     """Test passing cases for coordinate bounds"""
-    bounds = GeometryConstraints.CoordinateBounds(**params)
+    bounds = CoordinateBounds(**params)
     result = bounds(data)
     npt.assert_array_equal(result, data)
 
@@ -55,7 +56,7 @@ def test_coordinate_bounds_invalid(
     params: dict[str, ty.Any], data: ArrayLike, match: str
 ) -> None:
     """Test failing cases for coordinate bounds"""
-    bounds = GeometryConstraints.CoordinateBounds(**params)
+    bounds = CoordinateBounds(**params)
     with pytest.raises(ValueError, match=match):
         bounds(data)
 

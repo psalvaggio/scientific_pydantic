@@ -1,7 +1,13 @@
-"""Type adaptors for shapely"""
+"""Type adaptors for shapely
 
-from .adapters import GeometryAdapter
+The current supported types are:
+
+- Geometry types - [GeometryAdapter][scientific_pydantic.shapely.GeometryAdapter]
+"""
+
+from .adapters import CoordinateBounds, GeometryAdapter
 
 __all__ = [
+    "CoordinateBounds",
     "GeometryAdapter",
 ]
