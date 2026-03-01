@@ -2,7 +2,6 @@
 
 import sys
 import typing as ty
-from collections.abc import Mapping
 
 import numpy.testing as npt
 import pydantic
@@ -178,7 +177,7 @@ def test_valid_models(data: dict[str, ty.Any]) -> None:
         if (truth := data.get(field)) is not None:
             if isinstance(truth, str):
                 shapely.testing.assert_geometries_equal(val, shapely.from_wkt(truth))
-            elif isinstance(truth, Mapping):
+            elif isinstance(truth, dict):
                 shapely.testing.assert_geometries_equal(
                     val, shapely.geometry.shape(truth)
                 )
@@ -286,6 +285,8 @@ def test_round_trip_serialization() -> None:
     original = Model(location=shapely.Point(1.5, 2.5))
     json_str = original.model_dump_json()
     restored = Model.model_validate_json(json_str)
+    assert isinstance(original.location, shapely.Point)
+    assert isinstance(restored.location, shapely.Point)
     assert original.location.x == restored.location.x
     assert original.location.y == restored.location.y
 
