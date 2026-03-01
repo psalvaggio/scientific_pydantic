@@ -292,6 +292,41 @@ def test_serialization_json(value: Time, truth: dict[str, ty.Any]) -> None:
             "shape_error",
             id="shape-[1,2]-fail",
         ),
+        pytest.param(
+            {
+                "gt": "2026-03-01T13:26:00",
+                "ge": "2026-03-01T13:27:00",
+                "lt": "2026-03-02T13:27:01",
+                "le": "2026-03-02T13:27:00",
+            },
+            [["2026-03-01T13:27:00", "2026-03-02T13:27:00"]],
+            Time([["2026-03-01T13:27:00", "2026-03-02T13:27:00"]]),
+            id="all-bounds-pass",
+        ),
+        pytest.param(
+            {"gt": "2026-03-01T13:27:00"},
+            [["2026-03-01T13:27:00", "2026-03-02T13:27:00"]],
+            "bounds_error",
+            id="gt-fail",
+        ),
+        pytest.param(
+            {"ge": "2026-03-01T13:27:01"},
+            [["2026-03-01T13:27:00", "2026-03-02T13:27:00"]],
+            "bounds_error",
+            id="ge-fail",
+        ),
+        pytest.param(
+            {"lt": "2026-03-02T13:27:00"},
+            [["2026-03-01T13:27:00", "2026-03-02T13:27:00"]],
+            "bounds_error",
+            id="lt-fail",
+        ),
+        pytest.param(
+            {"le": "2026-03-02T12:27:00"},
+            [["2026-03-01T13:27:00", "2026-03-02T13:27:00"]],
+            "bounds_error",
+            id="le-fail",
+        ),
     ],
 )
 def test_contraints(

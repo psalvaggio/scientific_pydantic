@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import dataclasses
+import functools
 import typing as ty
 from collections.abc import Mapping, Sequence
 
+import pydantic
 from pydantic_core import PydanticCustomError, core_schema
 
 if ty.TYPE_CHECKING:
@@ -30,16 +32,27 @@ class TimeAdapter:
     shape : Sequence[Ellipsis | int | range | slice | None] | None
         Shape specifier for the given time(s). See `NDArrayValidator` for a
         description of how this works.
-
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
         scalar: bool | None = None,
         ndim: int | None = None,
         shape: Sequence[types.EllipsisType | int | range | slice | None] | None = None,
+        ge: ty.Any = None,
+        gt: ty.Any = None,
+        le: ty.Any = None,
+        lt: ty.Any = None,
     ) -> None:
+
+        from scientific_pydantic.numpy.validators import (
+            validate_all_ge,
+            validate_all_gt,
+            validate_all_le,
+            validate_all_lt,
+        )
+
         from ..validators import ArrayShapeValidator
 
         @dataclasses.dataclass
@@ -50,8 +63,26 @@ class TimeAdapter:
             le: ty.Callable[[Time], Time] | None = None
             lt: ty.Callable[[Time], Time] | None = None
 
+        validators: dict[str, ty.Callable] = {}
+        for bound, name, val in (
+            (gt, "gt", validate_all_gt),
+            (ge, "ge", validate_all_ge),
+            (lt, "lt", validate_all_lt),
+            (le, "le", validate_all_le),
+        ):
+            if bound is None:
+                continue
+            try:
+                bound_t = _validate_time(bound)
+            except ValueError as e:
+                msg = f"while validating the {name} constraint:\n{e}"
+                raise pydantic.PydanticSchemaGenerationError(msg) from e
+
+            validators[name] = functools.partial(val, bound=bound_t)
+
         self._validators = CtorValidators(
             shape=ArrayShapeValidator(scalar=scalar, ndim=ndim, shape=shape),
+            **validators,
         )
 
     def __get_pydantic_core_schema__(
