@@ -8,7 +8,23 @@ from pydantic_core import core_schema
 
 
 class EllipsisAdapter:
-    """A Pydantic annotation for the Ellipsis singleton (...)."""
+    """A Pydantic annotation for the `Ellipsis` singleton (`...`).
+
+    In general, you should use the publicly-defined alias
+    [EllipsisLiteral][scientific_pydantic.EllipsisLiteral] to express when you
+    want `...` stored in your model.
+
+    Examples
+    --------
+    >>> import pydantic
+    ... from scientific_pydantic import EllipsisLiteral
+    ...
+    ...
+    ... class Model(pydantic.BaseModel):
+    ...     shape: list[EllipsisLiteral | int]
+    >>> Model(shape=[1, ..., 2])
+    Model(shape=(1, Ellipsis, 2))
+    """
 
     @classmethod
     def __get_pydantic_core_schema__(
