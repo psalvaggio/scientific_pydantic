@@ -84,15 +84,15 @@ def test_json_schema() -> None:
                 "properties": {
                     "start": {
                         "title": "Start",
-                        "type": "integer",
+                        "anyOf": [{"type": "integer"}, {"type": "null"}],
                     },
                     "stop": {
                         "title": "Stop",
-                        "type": "integer",
+                        "anyOf": [{"type": "integer"}, {"type": "null"}],
                     },
                     "step": {
                         "title": "Step",
-                        "type": "integer",
+                        "anyOf": [{"type": "integer"}, {"type": "null"}],
                     },
                 },
             },
@@ -116,3 +116,13 @@ def test_datetime_timedelta() -> None:
     assert x.s.start == datetime.datetime.fromisoformat("2026-01-02T01:00:00")
     assert x.s.stop == datetime.datetime.fromisoformat("2026-01-03T02:00:00")
     assert x.s.step == datetime.timedelta(seconds=7260)
+
+
+def test_union_members() -> None:
+    """Test whether unions can be used for the types"""
+
+    class Model(pydantic.BaseModel):
+        s: ty.Annotated[slice, SliceAdapter(int, stop_type=int | str)]
+
+    assert Model(s=(1, "s", 2)).s == slice(1, "s", 2)  # type: ignore[bad-argument-type]
+    assert Model(s=(1, 0, 2)).s == slice(1, 0, 2)  # type: ignore[bad-argument-type]

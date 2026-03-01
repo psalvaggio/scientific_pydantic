@@ -17,13 +17,15 @@ class EllipsisAdapter:
     Examples
     --------
     >>> import pydantic
-    ... from scientific_pydantic import EllipsisLiteral
-    ...
-    ...
-    ... class Model(pydantic.BaseModel):
-    ...     shape: list[EllipsisLiteral | int]
+    >>> from scientific_pydantic import (
+    ...     EllipsisLiteral,
+    ... )  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> class Model(pydantic.BaseModel):
+    ...     shape: list[EllipsisLiteral | int]  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
     >>> Model(shape=[1, ..., 2])
-    Model(shape=(1, Ellipsis, 2))
+    Model(shape=[1, Ellipsis, 2])
     """
 
     @classmethod

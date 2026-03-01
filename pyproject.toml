@@ -81,8 +81,8 @@ convention = "numpy"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-testpaths = ["tests"]
-addopts = "--cov=scientific_pydantic --cov-report=html --cov-branch"
+testpaths = ["src", "tests"]
+addopts = "--cov=scientific_pydantic --cov-report=html --cov-branch --doctest-modules"
 
 [tool.coverage.report]
 exclude_also = [

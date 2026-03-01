@@ -14,7 +14,26 @@ from .slice_syntax import (
 
 
 class RangeAdapter:
-    """Pydantic adapter for Python ``range`` using slice syntax."""
+    """Pydantic adapter for Python `range` using slice syntax.
+
+    Inputs are coerced from either `range` or `str`. If `str`, a slice-like
+    syntax or `[start:]stop[:step]` is used. This `str` representation is also
+    used for the JSON encoding of range.
+
+    Examples
+    --------
+    >>> import typing as ty
+    >>> import pydantic
+    >>> from scientific_pydantic import RangeAdapter  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> class Model(pydantic.BaseModel):
+    ...     field: ty.Annotated[range, RangeAdapter()]  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> Model(field="12:25:2")
+    Model(field=range(12, 25, 2))
+    >>> Model(field=range(12, 25, 2))
+    Model(field=range(12, 25, 2))
+    """
 
     @classmethod
     def __get_pydantic_core_schema__(
