@@ -12,7 +12,6 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, PydanticCustomError, core_schema
 
 from scientific_pydantic.numpy import NDArrayAdapter
-from scientific_pydantic.numpy.validators import validate_shape
 from scientific_pydantic.version_check import version_ge
 
 if ty.TYPE_CHECKING:
@@ -160,6 +159,8 @@ class RotationAdapter:
             _validate_rotation,
         )
         if self._shape_spec is not None:
+            from scientific_pydantic.numpy.validators import validate_shape
+
             spec = self._shape_spec
 
             def _val(x: Rotation) -> Rotation:

@@ -1,5 +1,6 @@
 """Test for import isolation"""
 
+import pathlib
 import subprocess
 
 
@@ -16,13 +17,13 @@ def test_import_without_optional_deps() -> None:
             "--isolated",
             "--with",
             "pydantic",
-            "--with",
-            "pydantic_core",
+            "--no-project",
             "--",
             "python",
             "-c",
             "import scientific_pydantic",
         ],
+        cwd=pathlib.Path(__file__).parent.parent / "src",
         check=False,
         capture_output=True,
         text=True,
