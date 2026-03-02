@@ -4,10 +4,16 @@
 [![Pre-commit](https://github.com/psalvaggio/scientific_pydantic/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/psalvaggio/scientific_pydantic/actions/workflows/pre-commit.yml)
 [![Docs](https://img.shields.io/badge/docs-Docs-blue?style=flat-square&logo=github&logoColor=white&link=https://psalvaggio.github.io/scientific_pydantic/)](https://psalvaggio.github.io/scientific_pydantic/)
 [![Coverage Status](https://coveralls.io/repos/github/psalvaggio/scientific_pydantic/badge.svg?branch=main)](https://coveralls.io/github/psalvaggio/scientific_pydantic?branch=main)
+[![PyPI - Version](https://img.shields.io/pypi/v/scientific-pydantic)](https://pypi.org/project/scientific-pydantic/)
 
 `scientific_pydantic` is an extension module to
 [`pydantic`](https://docs.pydantic.dev/latest/) that adds support for a number
 of common data types in scientific computing.
+
+## Installation
+
+This project can be installed from either PyPI or conda-forge via the
+`scientific-pydantic` package.
 
 ## Motivation
 

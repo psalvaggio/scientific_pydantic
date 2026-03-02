@@ -14,6 +14,8 @@ path as the type they are adapting. For instance, the adapter
 `astropy.units.UnitBase` lives in `scientific_pydantic.astropy.units`.
 """
 
+from importlib.metadata import PackageNotFoundError, version
+
 from . import astropy, numpy, scipy, shapely
 from .ellipsis import EllipsisAdapter, EllipsisLiteral
 from .range import RangeAdapter
@@ -30,3 +32,8 @@ __all__ = [
     "scipy",
     "shapely",
 ]
+
+try:
+    __version__ = version("your-package-name")
+except PackageNotFoundError:
+    __version__ = "unknown"

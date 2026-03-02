@@ -1,15 +1,17 @@
 """Pydantic adapters for shapely types"""
 
+from __future__ import annotations
+
 import types
 import typing as ty
 from collections.abc import Mapping
 
 import pydantic
-from numpy.typing import ArrayLike, NDArray
-from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import PydanticCustomError, core_schema
 
-from ..numpy.validators import NDArrayValidator
+if ty.TYPE_CHECKING:
+    from numpy.typing import ArrayLike, NDArray
+    from pydantic.json_schema import JsonSchemaValue
 
 T = ty.TypeVar("T")
 
@@ -32,6 +34,8 @@ class CoordinateBounds(pydantic.BaseModel):
 
     def __call__(self, coordinates: ArrayLike) -> NDArray:
         """Validate the bounds on the given coordinates"""
+        from ..numpy.validators import NDArrayValidator
+
         return NDArrayValidator.from_kwargs(**self.model_dump())(coordinates)
 
 
