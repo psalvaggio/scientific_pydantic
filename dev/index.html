@@ -325,6 +325,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="." class="md-nav__link md-nav__link--active">
         
   
@@ -341,6 +359,58 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#motivation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motivation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -865,6 +935,47 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#motivation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motivation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -888,6 +999,96 @@
 <a href="https://github.com/psalvaggio/scientific_pydantic/actions/workflows/pre-commit.yml"><img alt="Pre-commit" src="https://github.com/psalvaggio/scientific_pydantic/actions/workflows/pre-commit.yml/badge.svg" /></a>
 <a href="https://psalvaggio.github.io/scientific_pydantic/"><img alt="Docs" src="https://img.shields.io/badge/docs-Docs-blue?style=flat-square&amp;logo=github&amp;logoColor=white&amp;link=https://psalvaggio.github.io/scientific_pydantic/" /></a>
 <a href="https://coveralls.io/github/psalvaggio/scientific_pydantic?branch=main"><img alt="Coverage Status" src="https://coveralls.io/repos/github/psalvaggio/scientific_pydantic/badge.svg?branch=main" /></a></p>
+<p><code>scientific_pydantic</code> is an extension module to
+<a href="https://docs.pydantic.dev/latest/"><code>pydantic</code></a> that adds support for a number
+of common data types in scientific computing.</p>
+<h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>
+<p>Let's say with only <code>pydantic</code>, you wanted to put a <code>numpy.ndarray</code> object into
+one of your models:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pydantic</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyModel</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+this will produce the following error:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pydantic.errors.PydanticSchemaGenerationError: Unable to generate pydantic-core schema for &lt;class &#39;numpy.ndarray&#39;&gt;. Set `arbitrary_types_allowed=True` in the model_config to ignore this error or implement `__get_pydantic_core_schema__` on your type to fully support it.
+</code></pre></div>
+Specifying <code>arbitrary_types_allowed=True</code> can work, but disables JSON
+serialization and validation and does not support lax parsing and input
+conversions, which are a powerful feature of pydantic. This library takes the
+approach of implementing <code>__get_pydantic_core_schema__</code> in adapter objects and
+using <code>Annotated</code>, as described
+<a href="https://docs.pydantic.dev/latest/concepts/types/#as-an-annotation">here</a>.</p>
+<p>With <code>scientific_pydantic</code>, this example looks like:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ty</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pydantic</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">scientific_pydantic.numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArrayAdapter</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyModel</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">arr</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Annotated</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">NDArrayAdapter</span><span class="p">()]</span>
+</code></pre></div>
+Using this pattern, you can embed scientific data types into your models and get
+the full <code>pydantic</code> experience with serialization and input conversions.</p>
+<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<p>In general, it is recommended to use <code>from</code>-style imports with this library. The
+import path for an adapter is normally akin to the import path of the type it is
+adapting. For instance, the adapter for <code>scipy.spatial.transform.Rotation</code> would
+be:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">scientific_pydantic.scipy.spatial.transform</span><span class="w"> </span><span class="kn">import</span> <span class="n">RotationAdapter</span>
+</code></pre></div>
+Adapters are used via the <code>Annotated</code> pattern, as was shown in the Motivation
+section. This allows for typecheckers that support <code>pydantic</code>, such as
+<a href="https://pyrefly.org"><code>pyrefly</code></a> to understand the type of the fields.</p>
+<p>A number of adapters provided with this library also take parameters that define
+common validation operations. This takes inspiration from <code>pydantic.Field</code>. For
+instance,
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pydantic</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyModel</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">a</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</code></pre></div>
+defines a non-negative integer. In <code>scientific_pydantic</code>, this style of
+validation logic can be accomplished via:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ty</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pydantic</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">scientific_pydantic.numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArrayAdapter</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyModel</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">a</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Annotated</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">NDArrayAdapter</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">)]</span>
+</code></pre></div>
+which constrains <code>a</code> to be an <code>N x 3</code> <code>ndarray</code> where all elements are
+non-negative. See the individual adapters in the API documentation for a
+description of the parameters each one takes.</p>
+<h2 id="design-philosophy">Design Philosophy<a class="headerlink" href="#design-philosophy" title="Permanent link">&para;</a></h2>
+<p>This library has an interesting conundrum from a dependency standpoint. Since
+the goal is to provide adapters for common types that come from many different
+libraries, there are a few options for how dependency management can work:</p>
+<ol>
+<li>Depend on all packages being supported and enforce version constraints. This
+   would violate the "pay for what you use" principle and is thus not a good
+   option.</li>
+<li>Split the package into <code>N</code> different, but related, packages (e.g.
+   <code>scientific_pydantic_shapely</code>) that enforce version constraints individually.
+   This is tractable, but leads to a large number of packages to maintain and
+   version together.</li>
+<li>Have 1 package and only depend on <code>pydantic</code> (and <code>pydantic_core</code>). Users
+   will bring their own versions of the packages they want to use.</li>
+</ol>
+<p>This library takes approach #3. This puts the burden of version compatibility
+onto this library. For instance, <code>scipy.spatial.transform.Rotation</code> objects
+gained the ability to support N-D arrays of rotation transforms in version
+1.17.0. Thus, validation features related to this must be disabled if the user
+brings their own <code>scipy</code> version that is <code>&lt; 1.17.0</code>. This adds complexity to
+this library, but prevents either the dependency bloat from option 1 or the
+package bloat from option 2.</p>
+<p>By only depending on <code>pydantic</code>, the library must not import anything from a
+third-party library at global scope. This is accomplished via liberal use of
+delayed and nested import statments and enforced via a unit test.</p>
 
 
 
