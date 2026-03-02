@@ -13,8 +13,34 @@ if ty.TYPE_CHECKING:
 class DTypeAdapter:
     """Pydantic adapter for numpy.dtype
 
-    Runtime value: numpy.dtype
-    JSON representation: dtype.str (e.g. '<f8', '|i4')
+    Validation Options
+    ------------------
+    1. `dtype`: Identity.
+    2. `dtype`-like object: Anything that can be converted to a numpy `dtype`
+       object via `dtype.__init__`. This notably includes the string
+       representations (e.g. '<f8', '|i4') or Python/numpy numeric types.
+
+    JSON Serialization
+    ------------------
+    `dtype`'s are serialized to JSON via the `.str` property.
+
+    Examples
+    --------
+    >>> import pydantic
+    >>> import numpy as np
+    >>> from scientific_pydantic.numpy import (
+    ...     DTypeAdapter,
+    ... )  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> class Model(pydantic.BaseModel):
+    ...     dt: ty.Annotated[np.dtype, DTypeAdapter()]  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> Model(dt="|i4")
+    Model(dt=dtype('int32'))
+    >>> Model(dt=float)
+    Model(dt=dtype('float64'))
+    >>> Model(dt=np.float64)
+    Model(dt=dtype('float64'))
     """
 
     @classmethod

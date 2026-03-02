@@ -2,6 +2,13 @@
 
 Adapters in the root of this package are for Python standard library types ONLY.
 
+The current supported types from the standard library (above and beyond what
+`pydantic` already supports) are:
+
+- `Ellipsis` - [EllipsisAdapter][scientific_pydantic.EllipsisAdapter]
+- `range` - [RangeAdapter][scientific_pydantic.RangeAdapter]
+- `slice` - [SliceAdapter][scientific_pydantic.SliceAdapter]
+
 Subpackages shall follow the structure of their library and exist at the same
 path as the type they are adapting. For instance, the adapter
 `astropy.units.UnitBase` lives in `scientific_pydantic.astropy.units`.

@@ -18,6 +18,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "astropy>=6.1.7",
+    "griffe-pydantic>=1.3.1",
     "mike>=2.1.3",
     "mkdocs-gen-files>=0.6.0",
     "mkdocs-literate-nav>=0.6.2",
@@ -81,8 +82,8 @@ convention = "numpy"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-testpaths = ["tests"]
-addopts = "--cov=scientific_pydantic --cov-report=html --cov-branch"
+testpaths = ["src", "tests"]
+addopts = "--cov=scientific_pydantic --cov-report=html --cov-branch --doctest-modules"
 
 [tool.coverage.report]
 exclude_also = [

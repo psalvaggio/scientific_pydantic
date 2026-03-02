@@ -9,20 +9,42 @@ from pydantic_core import core_schema
 
 
 class PhysicalTypeAdapter:
-    """A pydantic adapter for astropy.units.PhysicalType"""
+    """A pydantic adapter for astropy.units.PhysicalType
+
+    Validation Options
+    ------------------
+    1. `PhysicalType` - Identity.
+    2. `str` - The name of the physical type (e.g. `"length"`, `"mass"`).
+        This is the form used for JSON encoding.
+
+    Examples
+    --------
+    >>> import typing as ty
+    >>> import pydantic
+    >>> import astropy.units as u
+    >>> from scientific_pydantic.astropy.units import (
+    ...     PhysicalTypeAdapter,
+    ... )  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> class Model(pydantic.BaseModel):
+    ...     pt: ty.Annotated[
+    ...         u.PhysicalType, PhysicalTypeAdapter()
+    ...     ]  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> Model(pt="length")
+    Model(pt=PhysicalType('length'))
+    """
 
     @classmethod
     def __get_pydantic_core_schema__(
         cls,
         source_type: ty.Any,
-        handler: pydantic.GetCoreSchemaHandler,
+        _handler: pydantic.GetCoreSchemaHandler,
     ) -> core_schema.CoreSchema:
         """Get the pydantic schema for this type"""
         import astropy.units as u
 
         from .validators import validate_physical_type
-
-        del handler
 
         if source_type is not u.PhysicalType:
             msg = (
