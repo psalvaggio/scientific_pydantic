@@ -146,8 +146,8 @@ class GeometryAdapter:
     `shapely.geometry.base.BaseGeometry`, which would accept any of the geometry
     types.
 
-    Inputs can be coerced from:
-
+    Validation Options
+    ------------------
     1. Geometry types - Identity.
     2. `str` - A GeoJSON or WKT representation of the geometry
     3. `Mapping` - A GeoJSON mapping

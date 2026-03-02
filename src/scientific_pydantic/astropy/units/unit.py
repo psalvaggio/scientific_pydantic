@@ -13,18 +13,40 @@ from pydantic_core import core_schema
 
 
 class UnitAdapter:
-    """A pydantic adapter for astropy units
+    """A `pydantic` adapter for `astropy.units.UnitBase`
+
+    Validation Options
+    ------------------
+    1. `UnitBase` - Identity.
+    2. `str` - A string encoding of units that can be passed to the constructor
+           of `Unit` (e.g. `"kg m / s2"`). This is the form used for JSON
+           encoding.
 
     Parameters
     ----------
-    equivalent_unit : astropy.units.UnitBase | str | None
+    equivalent_unit
         If given, validated values must be equivalent to this unit.
-    equivalencies:
+    equivalencies
         Optional list of astropy equivalency pairs (as returned by e.g.
         ``astropy.units.spectral()``).  Passed verbatim to
         ``UnitBase.is_equivalent``.
-    physical_type : u.PhysicalType | str | u.Quantity | u.UnitBase | None
+    physical_type
         If given, the unit by have this physical type
+
+    Examples
+    --------
+    >>> import typing as ty
+    >>> import pydantic
+    >>> import astropy.units as u
+    >>> from scientific_pydantic.astropy.units import (
+    ...     UnitAdapter,
+    ... )  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> class Model(pydantic.BaseModel):
+    ...     u: ty.Annotated[u.UnitBase, UnitAdapter()]  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> Model(u="kg m / s2")
+    Model(u=Unit("kg m / s2"))
     """
 
     def __init__(
@@ -79,14 +101,12 @@ class UnitAdapter:
     def __get_pydantic_core_schema__(
         self,
         source_type: ty.Any,
-        handler: pydantic.GetCoreSchemaHandler,
+        _handler: pydantic.GetCoreSchemaHandler,
     ) -> core_schema.CoreSchema:
         """Get the pydantic schema for this type"""
         import astropy.units as u
 
         from .validators import validate_unit
-
-        del handler
 
         if source_type is not u.UnitBase:
             msg = (

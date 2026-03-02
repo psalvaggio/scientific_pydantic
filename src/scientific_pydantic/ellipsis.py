@@ -14,6 +14,11 @@ class EllipsisAdapter:
     [EllipsisLiteral][scientific_pydantic.EllipsisLiteral] to express when you
     want `...` stored in your model.
 
+    Validation Options
+    ------------------
+    1. `Ellipsis`/`...`: Identity.
+    2. `ty.Literal["..."]` - The string "...". This is used in JSON encoding.
+
     Examples
     --------
     >>> import pydantic

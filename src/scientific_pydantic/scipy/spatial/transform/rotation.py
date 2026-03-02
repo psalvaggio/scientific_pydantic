@@ -24,10 +24,10 @@ if ty.TYPE_CHECKING:
 
 
 class RotationAdapter:
-    """Pydantic adapter for scipy.spatial.transform.Rotation.
+    """`pydantic` adapter for `scipy.spatial.transform.Rotation`.
 
-    Inputs can be coerced from:
-
+    Validation Options
+    ------------------
     1. `Rotation` - Identity
     2. A mapping with one of the following:
 

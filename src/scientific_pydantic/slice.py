@@ -26,8 +26,11 @@ class SliceAdapter:
     valid uses of `slice` that do not use integers as the elements and thus
     this adapter supports non-integer elements.
 
-    Inputs can be coerced from:
+    A public alias [IntSliceAdapter][scientific_pydantic.IntSliceAdapter] is
+    exposed for `SliceAdapter(int | None)`.
 
+    Validation Options
+    ------------------
     1. `slice` - Identity.
     2. `str` - A string of the format `"[start]:[stop][:step]"`. This is also
        used as the JSON representation when all elements are either numeric
@@ -36,9 +39,6 @@ class SliceAdapter:
        (all optional). This is used as the JSON representation when the
        conditions for an `str` encoding are not met.
     4. `Sequence` - A sequence of length 1, 2 or 3 with generic elements.
-
-    A public alias [IntSliceAdapter][scientific_pydantic.IntSliceAdapter] is
-    exposed for `SliceAdapter(int | None)`.
 
     Parameters
     ----------

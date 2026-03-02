@@ -15,12 +15,14 @@ if ty.TYPE_CHECKING:
 class NDArrayAdapter:
     """Pydantic type adapter for numpy `ndarray`s with validation constraints.
 
-    Inputs can be coerced from:
-
+    Validation Options
+    ------------------
     1. `ndarray` - Identity
     2. `ArrayLike` - Any object that can be converted to an `ndarray` via
        [`np.asarray`](https://numpy.org/doc/stable/reference/generated/numpy.asarray.html).
 
+    Shape Specifiers
+    ----------------
     Shape specifiers for arrays are a sequence of entries, which support the
     options:
 
@@ -44,6 +46,11 @@ class NDArrayAdapter:
     would indicate the array must have at least 4 dimensions, where the last 4
     dimensions must be of size 4, anything, 1 or 2, and at least 3.
 
+    JSON Serialization
+    ------------------
+    `ndarray`s are encoded in JSON via nested list, which are obtained by
+    calling `.tolist()` on the `ndarray`.
+
     Parameters
     ----------
     dtype
@@ -66,6 +73,7 @@ class NDArrayAdapter:
 
     Examples
     --------
+    >>> import typing as ty
     >>> import pydantic
     >>> import numpy as np
     >>> from scientific_pydantic.numpy import (

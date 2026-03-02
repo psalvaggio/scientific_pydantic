@@ -16,9 +16,11 @@ from .slice_syntax import (
 class RangeAdapter:
     """Pydantic adapter for Python `range` using slice syntax.
 
-    Inputs are coerced from either `range` or `str`. If `str`, a slice-like
-    syntax or `[start:]stop[:step]` is used. This `str` representation is also
-    used for the JSON encoding of range.
+    Validation Options
+    ------------------
+    1. `range` - Identity
+    2. `str` - A slice-like syntax (`[start:]stop[:step]`) is used. This
+        representation is also used for the JSON encoding of range.
 
     Examples
     --------

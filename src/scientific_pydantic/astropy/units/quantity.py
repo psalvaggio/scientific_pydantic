@@ -28,42 +28,73 @@ class QuantityAdapter:
     This type supports a similar API to the numpy NDArray validator, but omits
     dtype, as astropy.units.Quantity's are always floating point.
 
+    Validation Options
+    ------------------
+    1. `Quantity` - Identity
+    2. `Quantity`-like object: Any object that can be passed to the constructor
+       of `Quantity`. For example, a string of the form "5 m" or a unitless
+       scalar/vector.
+    3. `Mapping` - A mapping with a `"value"` and optional (but required for any
+        non-unitless quantity) `"unit"` key. The `"value"` is any numeric
+        `ArrayLike` or scalar and the `"unit"` is anything that will validate
+        to a `UnitBase` via
+        [UnitAdapater][scientific_pydantic.astropy.units.UnitAdapter]. This is
+        the form used for JSON serialization, with `"value"` being a JSON list
+        or number and `"unit"` being a string.
+
     Parameters
     ----------
-    equivalent_unit : astropy.units.UnitBase | astropy.units.PhysicalType | None
+    equivalent_unit
         If given, then quantities must have units equivalent to this.
-    equivalencies : list[tuple] | None
+    equivalencies
         Optional list of astropy equivalency pairs (as returned by e.g.
         ``astropy.units.spectral()``).  Passed verbatim to
         ``UnitBase.is_equivalent``.
-    physical_type : u.PhysicalType | str | u.Quantity | u.UnitBase | None
+    physical_type
         If given, the quantity by have this physical type.
-    scalar : bool
+    scalar
         If True, only scalar quantities will be accepted. If False, only vector
         quantities will be accepted. If None, no scalar constraints are enforced,
         unless `ndim` or `shape` are provided.
-    ndim : int | None
+    ndim
         If given, the dimensionality of the quantity must match this value. Must
         be >= 0.
-    shape : Sequence[Ellipsis | int | range | slice | None] | None
+    shape
         Shape specifier for the given array. See `NDArrayValidator` for a
         description of how this works.
-    gt : ArrayLike | astropy.units.Quantity | None
+    gt
         If given, all elements in the given quantity must be > this value. If no
         units are provided, then `equivalent_unit` is used (if provided).
-    ge : ArrayLike | astropy.units.Quantity | None
+    ge
         If given, all elements in the given quantity must be >= this value. If no
         units are provided, then `equivalent_unit` is used (if provided).
-    lt : ArrayLike | astropy.units.Quantity | None
+    lt
         If given, all elements in the given quantity must be < this value. If no
         units are provided, then `equivalent_unit` is used (if provided).
-    le : ArrayLike | astropy.units.Quantity | None
+    le
         If given, all elements in the given quantity must be <= this value. If no
         units are provided, then `equivalent_unit` is used (if provided).
-    clip : Sequence[ArrayLike | u.Quantity | None] | u.Quantity
+    clip
         If given, a 2-element sequence of [min_clip, max_clip] to which to clip
         the values in the quantity. If no units are provided, then
         `equivalent_unit` is used (if provided).
+
+    Examples
+    --------
+    >>> import typing as ty
+    >>> import pydantic
+    >>> import astropy.units as u
+    >>> from scientific_pydantic.astropy.units import (
+    ...     QuantityAdapter,
+    ... )  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> class Model(pydantic.BaseModel):
+    ...     q: ty.Annotated[
+    ...         u.Quantity, QuantityAdapter()
+    ...     ]  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> Model(q="1.234 kg")
+    Model(q=<Quantity 1.234 kg>)
     """
 
     def __init__(  # noqa: PLR0913

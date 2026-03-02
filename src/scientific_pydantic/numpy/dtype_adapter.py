@@ -13,13 +13,15 @@ if ty.TYPE_CHECKING:
 class DTypeAdapter:
     """Pydantic adapter for numpy.dtype
 
-    Inputs can be coerced from the following types:
-
+    Validation Options
+    ------------------
     1. `dtype`: Identity.
     2. `dtype`-like object: Anything that can be converted to a numpy `dtype`
        object via `dtype.__init__`. This notably includes the string
        representations (e.g. '<f8', '|i4') or Python/numpy numeric types.
 
+    JSON Serialization
+    ------------------
     `dtype`'s are serialized to JSON via the `.str` property.
 
     Examples

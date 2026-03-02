@@ -20,18 +20,51 @@ if ty.TYPE_CHECKING:
 class TimeAdapter:
     """Pydantic adapter for astropy.time.Time
 
+    Validation Options
+    ------------------
+    1. `Time` - Identity.
+    2. `Time`-like object - Any object that can be passed directly to the `Time`
+       constructor, such an ISO-8601 string or a `datetime.datetime` (or an
+       `ArrayLike` of these objects).
+    3. `Mapping` - A mapping of constructor arguments to `Time`. `val` and
+        `val2` can also be passed as `"value"`/`"value2"` keys.
+
+    JSON Serialization
+    ------------------
+    `Time`s are serialized in JSON as the `Mapping` option. If the `precision`
+    of the `Time` object is > 6 (microsecond), then the format is converted to
+    `jd` and `jd1` and `jd2` are used for `"value"` and `"value2"`. Otherwise,
+    the `Time`'s `format` and `scale` are preferred. When possible, default
+    values for elements are omitted for brevity's sake.
+
     Parameters
     ----------
-    scalar : bool
+    scalar
         If True, only scalar times will be accepted. If False, only vector times
         will be accepted. If None, no scalar constraints are enforced, unless
         `ndim` or `shape` are provided.
-    ndim : int | None
+    ndim
         If given, the dimensionality of the time must match this value. Must
         be >= 0.
-    shape : Sequence[Ellipsis | int | range | slice | None] | None
+    shape
         Shape specifier for the given time(s). See `NDArrayValidator` for a
         description of how this works.
+
+    Examples
+    --------
+    >>> import typing as ty
+    >>> import pydantic
+    >>> import numpy as np
+    >>> from astropy.time import Time
+    >>> from scientific_pydantic.astropy.time import (
+    ...     TimeAdapter,
+    ... )  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> class Model(pydantic.BaseModel):
+    ...     t: ty.Annotated[Time, TimeAdapter()]  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> Model(t="2026-03-01T19:50:00")
+    Model(t=<Time object: scale='utc' format='isot' value=2026-03-01T19:50:00.000>)
     """
 
     def __init__(  # noqa: PLR0913
