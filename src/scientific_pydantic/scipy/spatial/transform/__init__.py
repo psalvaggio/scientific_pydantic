@@ -1,4 +1,10 @@
-"""Pydantic adapters for scipy.spatial.rotation"""
+"""Pydantic adapters for scipy.spatial.transform
+
+The current supported types are:
+
+- `Rotation` -
+    [RotationAdapter][scientific_pydantic.scipy.spatial.transform.RotationAdapter]
+"""
 
 from .rotation import RotationAdapter
 

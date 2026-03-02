@@ -26,33 +26,52 @@ if ty.TYPE_CHECKING:
 class RotationAdapter:
     """Pydantic adapter for scipy.spatial.transform.Rotation.
 
-    Serializes a Rotation as a quaternion (scalar-last, xyzw convention -
-    the same convention scipy uses internally) and validates from:
-    - A Rotation instance (passthrough)
-    - A mapping with one of the following:
-      - {
+    Inputs can be coerced from:
+
+    1. `Rotation` - Identity
+    2. A mapping with one of the following:
+
+        1. Inputs to [`from_quat()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.from_quat.html#scipy.spatial.transform.Rotation.from_quat):
+        ```python
+        {
           "quat": array_like, shape (..., 4),
           "scalar_first": bool (default False),
         }
-      - {
+        ```
+        This is the form used for JSON serialization as well.
+        2. Inputs to [`from_matrix()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.from_matrix.html#scipy.spatial.transform.Rotation.from_matrix):
+        ```python
+        {
           "matrix": array_like, shape (..., 3, 3),
           "assume_valid": bool (default False, requires >= 1.17.0),
         }
-      - {
+        ```
+        3. Inputs to [`from_rotvec()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.from_rotvec.html#scipy.spatial.transform.Rotation.from_rotvec):
+        ```python
+        {
           "rotvec": array_like, shape (..., 3),
           "degrees": bool (default False),
         }
-      - {
+        ```
+        4. Inputs to [`from_mrp()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.from_mrp.html#scipy.spatial.transform.Rotation.from_mrp):
+        ```python
+        {
           "mrp": array_like, shape (..., 3),
         }
-      - {
+        ```
+        5. Inputs to [`from_euler()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.from_euler.html#scipy.spatial.transform.Rotation.from_euler):
+        ```python
+        {
           "euler": {
             "seq": str (see scipy docs),
             "angles": float | array_like, shape (..., [1 or 2 or 3]),
             "degrees": bool (default False),
           },
         }
-      - {
+        ```
+        6. Inputs to [`from_davenport()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.from_davenport.html#scipy.spatial.transform.Rotation.from_davenport):
+        ```python
+        {
           "davenport": {
             "axes": array_like, shape (3,) or (..., [1 or 2 or 3], 3),
             "order": "e" or "extrinsic" or "i" or "intrinsic"
@@ -60,21 +79,10 @@ class RotationAdapter:
             "degrees": bool (default False),
           }
         }
+        ```
 
-    Usage
-    -----
-        import typing as ty
-        from pydantic import BaseModel
-        from scientific_pydantic.scipy.spatial.transform import RotationAdapter
-        from scipy.spatial.transform import Rotation
-
-        class Pose(BaseModel):
-            rotation: ty.Annotated[Rotation, RotationAdapter()]
-
-        pose = Pose(rotation={"quat": [0, 0, 0, 1]})
-        pose.rotation          # scipy.spatial.transform.Rotation instance
-        pose.model_dump()      # {"rotation": {"quat": [0.0, 0.0, 0.0, 1.0]}}
-        pose.model_dump_json() # '{"rotation":{"quat":[0.0,0.0,0.0,1.0]}}'
+    3. `ArrayLike` - A `(..., 4)` array of quaternion(s) in scalar-last xyzw
+           convention.
 
     Parameters
     ----------
@@ -87,6 +95,30 @@ class RotationAdapter:
     shape : Sequence[int | range | slice | None] | None
         If given, provides a constraint on the shape of the given rotations.
         Overrides `ndim`.
+
+    Examples
+    --------
+    >>> import typing as ty
+    >>> from pydantic import BaseModel
+    >>> from scientific_pydantic.scipy.spatial.transform import RotationAdapter
+    >>> from scipy.spatial.transform import Rotation  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> class Pose(BaseModel):
+    ...     rotation: ty.Annotated[
+    ...         Rotation, RotationAdapter()
+    ...     ]  # doctest: +NORMALIZE_WHITESPACE
+    <BLANKLINE>
+    >>> pose = Pose(rotation={"quat": [0, 0, 0, 1]})
+    >>> pose.rotation
+    Rotation.from_matrix(array([[1., 0., 0.],
+                                [0., 1., 0.],
+                                [0., 0., 1.]]))
+    >>> pose.model_dump()
+    {'rotation': Rotation.from_matrix(array([[1., 0., 0.],
+                                [0., 1., 0.],
+                                [0., 0., 1.]]))}
+    >>> pose.model_dump_json()  # '{"rotation":{"quat":[0.0,0.0,0.0,1.0]}}'
+    '{"rotation":{"quat":[0.0,0.0,0.0,1.0]}}'
     """
 
     def __init__(
