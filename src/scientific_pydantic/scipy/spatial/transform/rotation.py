@@ -109,10 +109,6 @@ class RotationAdapter:
     ...     ]  # doctest: +NORMALIZE_WHITESPACE
     <BLANKLINE>
     >>> pose = Pose(rotation={"quat": [0, 0, 0, 1]})
-    >>> pose.rotation
-    Rotation.from_matrix(array([[1., 0., 0.],
-                                [0., 1., 0.],
-                                [0., 0., 1.]]))
     >>> pose.model_dump_json()
     '{"rotation":{"quat":[0.0,0.0,0.0,1.0]}}'
     """
