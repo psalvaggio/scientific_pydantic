@@ -11,6 +11,7 @@
   <img src="img/logo.svg" width="260" style="gap: 20px;"/>
   <img src="img/name.svg" width="300" />
 </div>
+
 `scientific_pydantic` is an extension module to
 [`pydantic`](https://docs.pydantic.dev/latest/) that adds support for a number
 of common data types in scientific computing.
