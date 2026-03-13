@@ -77,9 +77,12 @@ class DTypeAdapter:
 def _validate(value: ty.Any) -> np.dtype:
     import numpy as np
 
+    if isinstance(value, np.dtype):
+        return value
+
     try:
         return np.dtype(value)
     except Exception as exc:
         err_t = "invalid_dtype"
         msg = "invalid numpy dtype: {e}"
-        raise PydanticCustomError(err_t, msg, {"value": value, "e": str(exc)}) from exc
+        raise PydanticCustomError(err_t, msg, {"e": str(exc)}) from exc
