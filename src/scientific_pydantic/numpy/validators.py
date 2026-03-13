@@ -26,7 +26,7 @@ class DTypeValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
     def __call__(self, arr: NDArray) -> NDArray:
         """Apply data type validation"""
         try:
-            return arr.astype(self.dtype)
+            return arr.astype(self.dtype, copy=False)
         except (ValueError, TypeError) as e:
             err_t = "dtype_error"
             msg = "the array could not be converted to {dtype}"
@@ -305,7 +305,11 @@ class NDArrayValidator(pydantic.BaseModel, frozen=True, extra="forbid"):
         """
         # Convert to ndarray if needed
         if not isinstance(arr, np.ndarray):
-            arr = np.asarray(arr)
+            arr = np.asarray(
+                arr, dtype=self.dtype.dtype if self.dtype is not None else None
+            )
+        elif self.dtype is not None:
+            arr = self.dtype(arr)
 
         for field in type(self).model_fields:
             val = getattr(self, field)

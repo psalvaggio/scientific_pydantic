@@ -9,6 +9,8 @@ from collections.abc import Mapping
 import pydantic
 from pydantic_core import PydanticCustomError, core_schema
 
+from scientific_pydantic.schema import make_core_schema
+
 if ty.TYPE_CHECKING:
     from numpy.typing import ArrayLike, NDArray
     from pydantic.json_schema import JsonSchemaValue
@@ -219,26 +221,9 @@ class GeometryAdapter:
 
         allowable_types = _get_allowable_types(source_type)
 
-        def validate(value: ty.Any) -> ty.Any:
-            if isinstance(value, shapely.geometry.base.BaseGeometry):
-                pass
-            elif isinstance(value, str):
-                value = _parse_str(value)
-            elif (is_mapping := isinstance(value, Mapping)) or hasattr(
-                value, "__geo_interface__"
-            ):
-                # shapely raises an AttributeError in this case
-                if is_mapping and "type" not in value:
-                    msg = 'Invalid GeoJSON mapping, missing "type"'
-                    err_t = "invalid_geojson"
-                    raise PydanticCustomError(err_t, msg)
-                try:
-                    value = shapely.geometry.shape(value)  # type: ignore[bad-argument-type]
-                except (KeyError, ValueError, shapely.errors.ShapelyError) as e:
-                    msg = "Invalid GeoJSON mapping ({e})"
-                    err_t = "invalid_geojson"
-                    raise PydanticCustomError(err_t, msg, {"e": e}) from e
-
+        def _validate_type(
+            value: shapely.geometry.base.BaseGeometry,
+        ) -> shapely.geometry.base.BaseGeometry:
             if not isinstance(value, allowable_types):
                 msg = "Value was of incorrect type: {t}. {exp}"
                 subs = {"t": type(value).__name__}
@@ -252,25 +237,41 @@ class GeometryAdapter:
                 err_t = "geometry_type"
                 raise PydanticCustomError(err_t, msg, subs)
 
-            return self._validator(value)
+            return value
 
-        def serialize(geom: shapely.geometry.base.BaseGeometry) -> dict[str, ty.Any]:
-            return geom.__geo_interface__
+        def _validate(value: ty.Any) -> ty.Any:
+            if isinstance(value, str):
+                return _parse_str(value)
 
-        schema = core_schema.no_info_plain_validator_function(validate)
-        return core_schema.json_or_python_schema(
-            json_schema=core_schema.chain_schema(
-                [
-                    core_schema.union_schema(
-                        [core_schema.str_schema(), core_schema.dict_schema()]
-                    ),
-                    schema,
-                ]
-            ),
-            python_schema=schema,
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                serialize,
-                return_schema=core_schema.dict_schema(),
+            if (is_mapping := isinstance(value, Mapping)) or hasattr(
+                value, "__geo_interface__"
+            ):
+                # shapely raises an AttributeError in this case
+                if is_mapping and "type" not in value:
+                    msg = 'Invalid GeoJSON mapping, missing "type"'
+                    err_t = "invalid_geojson"
+                    raise PydanticCustomError(err_t, msg)
+                try:
+                    return shapely.geometry.shape(value)  # type: ignore[bad-argument-type]
+                except (KeyError, ValueError, shapely.errors.ShapelyError) as e:
+                    msg = "Invalid GeoJSON mapping ({e})"
+                    err_t = "invalid_geojson"
+                    raise PydanticCustomError(err_t, msg, {"e": e}) from e
+
+            err_t = "invalid_geometry"
+            msg = (
+                "expected a geometry, string (WKT/GeoJSON), a GeoJSON mapping, "
+                "or an object implementing __geo_interface__"
+            )
+            raise PydanticCustomError(err_t, msg)
+
+        return make_core_schema(
+            shapely.geometry.base.BaseGeometry,
+            serializer=lambda s: s.__geo_interface__,
+            before_validator=_validate,
+            after_validators=[_validate_type, self._validator],
+            json_schema=core_schema.union_schema(
+                [core_schema.str_schema(), core_schema.dict_schema()]
             ),
         )
 

@@ -1,13 +1,17 @@
 """Pydantic adapters for numpy data types."""
 
+from __future__ import annotations
+
 import typing as ty
 
-import pydantic
-from pydantic.json_schema import JsonSchemaValue
-from pydantic_core import core_schema
+from pydantic_core import PydanticCustomError, core_schema
+
+from scientific_pydantic.schema import make_core_schema
 
 if ty.TYPE_CHECKING:
     import numpy as np
+    import pydantic
+    from pydantic.json_schema import JsonSchemaValue
 
 
 class DTypeAdapter:
@@ -50,36 +54,32 @@ class DTypeAdapter:
         _handler: pydantic.GetCoreSchemaHandler,
     ) -> core_schema.CoreSchema:
         """Get the pydantic schema for this type"""
-        return core_schema.no_info_plain_validator_function(
-            cls._validate,
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                cls._serialize,
-            ),
-        )
-
-    @staticmethod
-    def _validate(value: ty.Any) -> "np.dtype":
         import numpy as np
 
-        if isinstance(value, np.dtype):
-            return value
-
-        try:
-            return np.dtype(value)
-        except Exception as exc:
-            msg = f"Invalid numpy dtype: {value!r}"
-            raise ValueError(msg) from exc
-
-    @staticmethod
-    def _serialize(value: "np.dtype") -> str:
-        return value.str
+        return make_core_schema(
+            np.dtype,
+            serializer=lambda dt: dt.str,
+            before_validator=_validate,
+            json_schema=core_schema.str_schema(),
+        )
 
     def __get_pydantic_json_schema__(
         self,
-        _core_schema: core_schema.CoreSchema,
-        _handler: pydantic.GetJsonSchemaHandler,
+        core_schema: core_schema.CoreSchema,
+        handler: pydantic.GetJsonSchemaHandler,
     ) -> JsonSchemaValue:
         """Generate JSON schema for the ndarray field"""
-        json_schema = ty.cast("dict", core_schema.str_schema())
+        json_schema = handler(core_schema)
         json_schema["description"] = "NumPy dtype"
-        return ty.cast("JsonSchemaValue", json_schema)
+        return json_schema
+
+
+def _validate(value: ty.Any) -> np.dtype:
+    import numpy as np
+
+    try:
+        return np.dtype(value)
+    except Exception as exc:
+        err_t = "invalid_dtype"
+        msg = "invalid numpy dtype: {e}"
+        raise PydanticCustomError(err_t, msg, {"value": value, "e": str(exc)}) from exc

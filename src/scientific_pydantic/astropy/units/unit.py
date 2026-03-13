@@ -5,6 +5,8 @@ from __future__ import annotations
 import dataclasses
 import typing as ty
 
+from scientific_pydantic.schema import make_core_schema
+
 if ty.TYPE_CHECKING:
     import astropy.units as u
 
@@ -115,30 +117,26 @@ class UnitAdapter:
             )
             raise pydantic.PydanticSchemaGenerationError(msg)
 
-        validators: list[core_schema.CoreSchema] = [
-            core_schema.no_info_plain_validator_function(validate_unit)
+        validators = [
+            f
+            for f in (self._validators.equivalency, self._validators.physical_type)
+            if f is not None
         ]
-        if (equiv_val := self._validators.equivalency) is not None:
-            validators.append(core_schema.no_info_plain_validator_function(equiv_val))
-        if (pt_val := self._validators.physical_type) is not None:
-            validators.append(core_schema.no_info_plain_validator_function(pt_val))
 
-        return core_schema.json_or_python_schema(
-            json_schema=core_schema.chain_schema(
-                [core_schema.str_schema(), *validators]
-            ),
-            python_schema=core_schema.chain_schema(validators),
-            serialization=core_schema.to_string_ser_schema(),
+        return make_core_schema(
+            u.UnitBase,
+            serializer=str,
+            before_validator=validate_unit,
+            after_validators=validators,
+            json_schema=core_schema.str_schema(),
         )
 
     def __get_pydantic_json_schema__(
         self,
-        core_schema_: core_schema.CoreSchema,
+        core_schema: core_schema.CoreSchema,
         handler: pydantic.json_schema.GetJsonSchemaHandler,
     ) -> pydantic.json_schema.JsonSchemaValue:
         """Get the JSON schema for this type"""
-        del core_schema_
-
         desc = "An astropy unit expressed as a string."
         if self.equivalent_unit is not None:
             equiv_hint = ""
@@ -152,7 +150,7 @@ class UnitAdapter:
         if self.physical_type is not None:
             desc += f' Must be of type "{self.physical_type!s}".'
 
-        return handler(core_schema.str_schema()) | {
+        return handler(core_schema) | {
             "description": desc,
             "examples": ["m / s", "km / h", "kg", "deg", "J / (kg K)"]
             if self.equivalent_unit is None

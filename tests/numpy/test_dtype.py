@@ -27,6 +27,18 @@ def test_int32() -> None:
 
 
 @pytest.mark.parametrize(
+    ("value", "match"),
+    [
+        pytest.param(14, "invalid_dtype"),
+    ],
+)
+def test_failed_validation(value: ty.Any, match: str) -> None:
+    """Test a failed validation"""
+    with pytest.raises(pydantic.ValidationError, match=match):
+        DefaultModel(dtype=value)
+
+
+@pytest.mark.parametrize(
     "value",
     [
         "int",
@@ -48,8 +60,5 @@ def test_json_schema() -> None:
     assert js["properties"]["dtype"] == {
         "description": "NumPy dtype",
         "title": "Dtype",
-        "type": "str",
+        "type": "string",
     }
-
-
-# Add more tests here

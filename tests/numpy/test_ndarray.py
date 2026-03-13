@@ -1,11 +1,13 @@
 """Unit test for Numpy functionality"""
 
 import typing as ty
+from collections.abc import Mapping
 
 import numpy as np
 import pydantic
 import pytest
 from numpy.typing import ArrayLike
+from pydantic.json_schema import JsonSchemaValue
 
 from scientific_pydantic.numpy import NDArrayAdapter
 
@@ -506,3 +508,26 @@ def test_shape(*, shape: tuple, input_shape: tuple, should_pass: bool) -> None:
     else:
         with pytest.raises(pydantic.ValidationError, match="does not match spec"):
             Model(arr=data)
+
+
+class MyNDArrayAdapter:
+    """Custom adapter for NDArray"""
+
+    def dump_json(self, value: np.ndarray) -> dict[str, ty.Any]:
+        """Dump to JSON"""
+        return {
+            "data": value.tolist(),
+            "dtype": str(value.dtype),
+            "shape": list(value.shape),
+        }
+
+    def validate_json(self, value: object) -> np.ndarray:
+        """Validate object"""
+        if isinstance(value, Mapping):
+            return np.array(value["data"], dtype=value["dtype"]).reshape(value["shape"])
+        msg = "Bad input"
+        raise ValueError(msg)
+
+    def json_schema(self, schema: JsonSchemaValue) -> None:
+        """Customize the JSON schema"""
+        schema["description"] = "Typed ndarray with shape and dtype metadata"

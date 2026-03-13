@@ -49,3 +49,12 @@ def test_can_only_use_with_valid_types() -> None:
 
         class M1(pydantic.BaseModel):
             f: ty.Annotated[int, EllipsisAdapter()]
+
+
+def test_json_schema() -> None:
+    """Test the JSON schema"""
+    assert Model.model_json_schema()["properties"]["e"] == {
+        "const": "...",
+        "title": "E",
+        "type": "string",
+    }

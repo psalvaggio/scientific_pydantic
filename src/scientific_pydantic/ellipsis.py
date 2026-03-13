@@ -6,6 +6,8 @@ import typing as ty
 import pydantic
 from pydantic_core import core_schema
 
+from .schema import make_core_schema
+
 
 class EllipsisAdapter:
     """A Pydantic annotation for the `Ellipsis` singleton (`...`).
@@ -51,20 +53,19 @@ class EllipsisAdapter:
             )
             raise pydantic.PydanticSchemaGenerationError(msg)
 
-        return core_schema.no_info_plain_validator_function(
-            cls._validate,
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                lambda _: "...",
-                when_used="json",
-            ),
+        return make_core_schema(
+            types.EllipsisType,
+            serializer=lambda _: "...",
+            before_validator=_validate,
+            json_schema=core_schema.literal_schema(["..."]),
         )
 
-    @classmethod
-    def _validate(cls, value: ty.Any) -> types.EllipsisType:
-        if value is ... or value == "...":
-            return ...
-        msg = f"Expected Ellipsis (...), got {value!r}"
-        raise ValueError(msg)
+
+def _validate(value: ty.Any) -> types.EllipsisType:
+    if value is ... or value == "...":
+        return ...
+    msg = f"Expected Ellipsis (...), got {value!r}"
+    raise ValueError(msg)
 
 
 EllipsisLiteral = ty.Annotated[types.EllipsisType, EllipsisAdapter()]

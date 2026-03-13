@@ -34,7 +34,7 @@ def test_range_validation(value: ty.Any, expected: range) -> None:
 @pytest.mark.parametrize(
     "value",
     [
-        pytest.param(123, id="int"),
+        pytest.param(123, id="invalid_range"),
         pytest.param("5", id="5"),
         pytest.param("random text", id="random text"),
         pytest.param("random:text:with colons", id="non-ints"),
@@ -67,4 +67,5 @@ def test_json_schema() -> None:
     schema = _Model.model_json_schema()
     r = schema["properties"]["r"]
     assert r["type"] == "string"
+    assert r["description"] == "Python range syntax: start:stop[:step]"
     assert "pattern" in r

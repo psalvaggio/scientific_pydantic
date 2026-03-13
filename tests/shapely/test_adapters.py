@@ -196,7 +196,7 @@ def test_valid_models(data: dict[str, ty.Any]) -> None:
             "invalid_geometry",
             id="invalid-geojson",
         ),
-        pytest.param({"base": 10}, "geometry_type", id="int-for-base"),
+        pytest.param({"base": 10}, "invalid_geometry", id="int-for-base"),
         pytest.param(
             {"any_point": "MULTIPOINT (1 2, 3 4)"},
             "geometry_type",

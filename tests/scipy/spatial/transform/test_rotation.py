@@ -410,3 +410,13 @@ def test_scipy_without_assume_valid_support() -> None:
                     "assume_valid": True,
                 }
             )
+
+
+def test_json_schema() -> None:
+    """Test the JSON schema for Rotation"""
+    # This should be better
+    assert Basic.model_json_schema()["properties"]["rotation"] == {
+        "title": "Rotation",
+        "type": "object",
+        "additionalProperties": True,
+    }

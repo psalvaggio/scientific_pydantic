@@ -43,6 +43,7 @@ def test_int_slice_validation(value: ty.Any, expected: range) -> None:
         pytest.param("random text", id="random text"),
         pytest.param("random:text:with colons", id="non-ints"),
         pytest.param("1:2:3:4", id="1:2:3:4"),
+        pytest.param(slice("a", "b"), id="str-slice'"),
     ],
 )
 def test_int_slice_validation_errors(value: ty.Any) -> None:
