@@ -52,7 +52,11 @@ def make_core_schema(  # noqa: PLR0913
             core_schema.with_info_after_validator_function
             if _takes_info_param(val)
             else core_schema.no_info_after_validator_function
-        )(val, is_dtype)  # type: ignore[bad-argument]
+            # We can use any_schema here because is_dtype() is applied to the
+            # output of before_validator. The types of the arguments say that we
+            # have to pass through NativeT, that is a possible user error, but
+            # we're not going to waste the overhead of additional checks here.
+        )(val, core_schema.any_schema())  # type: ignore[bad-argument-type]
         for val in after_validators or []
     ]
 
@@ -63,7 +67,7 @@ def make_core_schema(  # noqa: PLR0913
                 if _takes_info_param(before_validator)
                 else core_schema.no_info_before_validator_function
             )(
-                before_validator,  # type: ignore[bad-argument]
+                before_validator,  # type: ignore[bad-argument-type]
                 is_dtype,
                 json_schema_input_schema=json_schema,
             ),
@@ -78,6 +82,10 @@ def make_core_schema(  # noqa: PLR0913
 
 
 def _takes_info_param(callable_func: ty.Callable) -> bool:
+    """Test whether the given callable is a "with info" callable
+
+    The current implementation just tests if it is a 2-argument function.
+    """
     try:
         sig = inspect.signature(callable_func)
     except (ValueError, TypeError):
