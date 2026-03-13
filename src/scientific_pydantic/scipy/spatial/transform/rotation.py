@@ -141,7 +141,7 @@ class RotationAdapter:
             msg = "N-D shape constraints on Rotation require scipy >= 1.17.0"
             raise pydantic.PydanticSchemaGenerationError(msg)
 
-        self._encoding = encoding if encoding is not None else self._default_encoding()
+        self._encoding = encoding if encoding is not None else _default_encoding()
 
     def __get_pydantic_core_schema__(
         self,
@@ -181,14 +181,6 @@ class RotationAdapter:
             Rotation,
             encoding=self._encoding,
             after_validators=after_validators,
-        )
-
-    def _default_encoding(self) -> Encoding[Rotation]:
-        """Get the default encoding of this type"""
-        return Encoding(
-            serializer=_rotation_to_dict,
-            before_validator=_validate_rotation,
-            json_schema=core_schema.dict_schema(),
         )
 
 
@@ -343,6 +335,14 @@ def _validate_rotation(value: ty.Any) -> Rotation:
         '"quat", "matrix", "rotvec", "mrp", "euler" or "davenport".'
     )
     raise PydanticCustomError(err_t, msg, {"val_t": repr(type(value))})
+
+
+def _default_encoding() -> Encoding[Rotation]:
+    return Encoding(
+        serializer=_rotation_to_dict,
+        before_validator=_validate_rotation,
+        json_schema=core_schema.dict_schema(),
+    )
 
 
 @functools.cache

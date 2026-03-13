@@ -238,7 +238,6 @@ class QuantityAdapter:
         return schema
 
     def _default_encoding(self) -> Encoding[u.Quantity]:
-        """Get the default encoding for this type"""
         return Encoding(
             serializer=functools.partial(
                 _serialize, serialize_as_unit=self._serialize_as_unit

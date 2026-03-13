@@ -193,7 +193,6 @@ class NDArrayAdapter:
         return json_schema
 
     def _default_encoding(self) -> Encoding["np.ndarray"]:
-        """Get the default encoding for this type"""
         return Encoding(
             serializer=lambda a: a.tolist(),
             before_validator=self._validate_json,

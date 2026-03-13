@@ -120,7 +120,7 @@ class TimeAdapter:
             shape=ArrayShapeValidator(scalar=scalar, ndim=ndim, shape=shape),
             **validators,
         )
-        self._encoding = encoding if encoding is not None else self._default_encoding()
+        self._encoding = encoding if encoding is not None else _default_encoding()
 
     def __get_pydantic_core_schema__(
         self,
@@ -138,13 +138,6 @@ class TimeAdapter:
                 for field in dataclasses.fields(self._validators)
                 if (func := getattr(self._validators, field.name)) is not None
             ],
-        )
-
-    def _default_encoding(self) -> Encoding[Time]:
-        return Encoding(
-            serializer=_serialize_json,
-            before_validator=_validate_time,
-            json_schema=core_schema.dict_schema(),
         )
 
 
@@ -237,3 +230,11 @@ def _serialize_json(t: Time) -> dict[str, ty.Any]:
         ]
 
     return res
+
+
+def _default_encoding() -> Encoding[Time]:
+    return Encoding(
+        serializer=_serialize_json,
+        before_validator=_validate_time,
+        json_schema=core_schema.dict_schema(),
+    )
