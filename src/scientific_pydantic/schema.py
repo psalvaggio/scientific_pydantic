@@ -19,7 +19,7 @@ class Encoding(ty.Generic[NativeT]):
     Parameters
     ----------
     serializer
-        Converts a validated value to a JSON-serialisable object. May take one
+        Converts a validated value to a JSON-serializable object. May take one
         argument ``(value,)`` or two ``(value, info)`` where ``info`` is a
         ``pydantic_core.SerializationInfo`` instance.
     before_validator

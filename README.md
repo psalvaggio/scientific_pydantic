@@ -5,7 +5,12 @@
 [![Docs](https://img.shields.io/badge/docs-Docs-blue?style=flat-square&logo=github&logoColor=white&link=https://psalvaggio.github.io/scientific_pydantic/)](https://psalvaggio.github.io/scientific_pydantic/)
 [![Coverage Status](https://coveralls.io/repos/github/psalvaggio/scientific_pydantic/badge.svg?branch=main)](https://coveralls.io/github/psalvaggio/scientific_pydantic?branch=main)
 [![PyPI - Version](https://img.shields.io/pypi/v/scientific-pydantic)](https://pypi.org/project/scientific-pydantic/)
+[![Conda Version](https://img.shields.io/conda/v/conda-forge/scientific-pydantic)](https://anaconda.org/conda-forge/scientific-pydantic)
 
+<div style="display: flex; align-items: center; justify-content: center;">
+  <img src="img/logo.svg" width="260" style="gap: 20px;"/>
+  <img src="img/name.svg" width="300" />
+</div>
 `scientific_pydantic` is an extension module to
 [`pydantic`](https://docs.pydantic.dev/latest/) that adds support for a number
 of common data types in scientific computing.
@@ -88,6 +93,18 @@ class MyModel(pydantic.BaseModel):
 which constrains `a` to be an `N x 3` `ndarray` where all elements are
 non-negative. See the individual adapters in the API documentation for a
 description of the parameters each one takes.
+
+### Customization
+
+All type adapters in this library come bundled with a default
+[Encoding](api/scientific_pydantic/#scientific_pydantic.Encoding), which
+describes how the type is serialized and validated from JSON-serializable types.
+
+While these defaults should work for many use cases, it may be desirable to
+customize this encoding. Many adapters will support an `encoding=` keyword
+argument in their constructors for doing just this. See the `Encoding`
+documentation for an example.
+
 
 ## Design Philosophy
 
