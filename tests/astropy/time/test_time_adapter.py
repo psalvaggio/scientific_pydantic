@@ -10,7 +10,9 @@ import pydantic
 import pydantic_core
 import pytest
 from astropy.time import Time
+from pydantic_core import core_schema
 
+from scientific_pydantic import Encoding
 from scientific_pydantic.astropy.time import TimeAdapter
 
 
@@ -351,3 +353,29 @@ def test_contraints(
     else:
         with pytest.raises(pydantic.ValidationError, match=result):
             Model(field=value)
+
+
+def test_custom_encoding() -> None:
+    """Test a custom encoding"""
+    fmt = "%Y%m%d%H%M%S"
+
+    def serialize(t: Time) -> str:
+        return ty.cast("str", t.strftime(fmt))
+
+    def validate(val: ty.Any) -> Time:
+        if isinstance(val, Time):
+            return val
+        return ty.cast("Time", Time.strptime(val, fmt))
+
+    encoding = Encoding(
+        serializer=serialize,
+        before_validator=validate,
+        json_schema=core_schema.str_schema(),
+    )
+
+    class Model(pydantic.BaseModel):
+        field: ty.Annotated[Time, TimeAdapter(scalar=True, encoding=encoding)]
+
+    m = Model(field="20260313161300")
+    assert m.field == Time("2026-03-13T16:13:00", format="isot")
+    assert m.model_dump(mode="json") == {"field": "20260313161300"}

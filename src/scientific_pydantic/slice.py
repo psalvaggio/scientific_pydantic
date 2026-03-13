@@ -42,18 +42,21 @@ class SliceAdapter:
 
     Parameters
     ----------
-    default_type : Hashable
+    default_type
         The default type annotation for all 3 elements of the slice. This should
         normally include `None` unless all 3 elements are always required..
-    start_type : Hashable
+    start_type
         If given, overrides `default_type` as the type annotation for the start
         of the slice.
-    stop_type : Hashable
+    stop_type
         If given, overrides `default_type` as the type annotation for the stop
         of the slice.
-    step_type : Hashable
+    step_type
         If given, overrides `default_type` as the type annotation for the step
         of the slice.
+    encoding
+        A custom encoding for this type
+
 
     Examples
     --------
@@ -80,6 +83,7 @@ class SliceAdapter:
         start_type: Hashable = UNSET,
         stop_type: Hashable = UNSET,
         step_type: Hashable = UNSET,
+        encoding: Encoding | None = None,
     ) -> None:
         adapters = {
             t: pydantic.TypeAdapter(t)
@@ -96,6 +100,7 @@ class SliceAdapter:
         self._step_adapter = (
             adapters[step_type] if step_type is not UNSET else self._default_adapter
         )
+        self._encoding = encoding if encoding is not None else self._default_encoding()
 
     def __get_pydantic_core_schema__(
         self,
@@ -125,17 +130,11 @@ class SliceAdapter:
 
         return make_core_schema(
             slice,
-            encoding=self._default_encoding(),
+            encoding=self._encoding,
             after_validators=[_validate],
         )
 
     def _default_encoding(self) -> Encoding[slice]:
-        def _validate(value: slice) -> slice:
-            start = self._start_adapter.validate_python(value.start)
-            stop = self._stop_adapter.validate_python(value.stop)
-            step = self._step_adapter.validate_python(value.step)
-            return slice(start, stop, step)
-
         def _serialize(value: slice) -> str | dict[str, ty.Any]:
             if all(
                 x is None or isinstance(x, numbers.Number)
@@ -181,9 +180,6 @@ class SliceAdapter:
         )
 
 
-IntSliceAdapter = SliceAdapter(int | None)
-
-
 def _from_mapping(value: Mapping[str, ty.Any]) -> tuple[ty.Any, ty.Any, ty.Any]:
     if any(x not in ("start", "stop", "step") for x in value):
         msg = 'Invalid key for slice, can only accept "start"/"stop"/"step"'
@@ -227,3 +223,6 @@ def _validate_slice(value: ty.Any) -> slice:
             raise ValueError(msg)
 
     return slice(start, stop, step)
+
+
+IntSliceAdapter = SliceAdapter(int | None)

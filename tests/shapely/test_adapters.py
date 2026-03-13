@@ -9,7 +9,9 @@ import pytest
 import shapely
 import shapely.testing
 from numpy.typing import ArrayLike
+from pydantic_core import core_schema
 
+from scientific_pydantic import Encoding
 from scientific_pydantic.shapely.adapters import (
     CoordinateBounds,
     GeometryAdapter,
@@ -316,3 +318,26 @@ def test_json_schema() -> None:
     """Test the JSON schema"""
     # This test should be improved, for now just make sure we don't raise
     GeometryModel.model_json_schema()
+
+
+def test_custom_encoding() -> None:
+    """Test a custom encoding"""
+
+    def serialize(t: shapely.Point) -> str:
+        return t.wkt.replace("POINT", "PT")
+
+    def validate(val: ty.Any) -> shapely.Point:
+        return shapely.from_wkt(val.replace("PT", "POINT"))
+
+    encoding = Encoding[shapely.Point](
+        serializer=lambda p: p.wkt.replace("POINT", "PT"),
+        before_validator=lambda v: shapely.from_wkt(v.replace("PT", "POINT")),
+        json_schema=core_schema.str_schema(),
+    )
+
+    class Model(pydantic.BaseModel):
+        field: ty.Annotated[shapely.Point, GeometryAdapter(encoding=encoding)]
+
+    m = Model(field="PT (1 2)")
+    assert m.field == shapely.Point(1, 2)
+    assert m.model_dump(mode="json") == {"field": "PT (1 2)"}

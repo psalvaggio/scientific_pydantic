@@ -1,14 +1,15 @@
 """Unit test for Numpy functionality"""
 
 import typing as ty
-from collections.abc import Mapping
 
 import numpy as np
+import numpy.testing as npt
 import pydantic
 import pytest
 from numpy.typing import ArrayLike
-from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import core_schema
 
+from scientific_pydantic import Encoding
 from scientific_pydantic.numpy import NDArrayAdapter
 
 
@@ -510,24 +511,33 @@ def test_shape(*, shape: tuple, input_shape: tuple, should_pass: bool) -> None:
             Model(arr=data)
 
 
-class MyNDArrayAdapter:
-    """Custom adapter for NDArray"""
+def test_custom_encoding() -> None:
+    """Test a custom encoding of quantities"""
 
-    def dump_json(self, value: np.ndarray) -> dict[str, ty.Any]:
-        """Dump to JSON"""
+    def serialize(value: np.ndarray) -> dict:
         return {
             "data": value.tolist(),
             "dtype": str(value.dtype),
             "shape": list(value.shape),
         }
 
-    def validate_json(self, value: object) -> np.ndarray:
+    def validate(value: ty.Any) -> np.ndarray:
         """Validate object"""
-        if isinstance(value, Mapping):
-            return np.array(value["data"], dtype=value["dtype"]).reshape(value["shape"])
-        msg = "Bad input"
-        raise ValueError(msg)
+        if isinstance(value, np.ndarray):
+            return value
+        return np.array(value["data"], dtype=value["dtype"]).reshape(value["shape"])
 
-    def json_schema(self, schema: JsonSchemaValue) -> None:
-        """Customize the JSON schema"""
-        schema["description"] = "Typed ndarray with shape and dtype metadata"
+    encoding = Encoding(
+        serializer=serialize,
+        before_validator=validate,
+        json_schema=core_schema.dict_schema(),
+    )
+
+    class Model(pydantic.BaseModel):
+        field: ty.Annotated[np.ndarray, NDArrayAdapter(ndim=1, encoding=encoding)]
+
+    m = Model(field=np.array([1.0, 2.0, 3.0]))
+    npt.assert_allclose(m.field, np.array([1.0, 2.0, 3.0]))
+    assert m.model_dump(mode="json") == {
+        "field": {"data": [1.0, 2.0, 3.0], "dtype": "float64", "shape": [3]}
+    }

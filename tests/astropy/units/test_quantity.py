@@ -7,7 +7,9 @@ import numpy as np
 import numpy.testing as npt
 import pydantic
 import pytest
+from pydantic_core import core_schema
 
+from scientific_pydantic import Encoding
 from scientific_pydantic.astropy.units import QuantityAdapter
 
 
@@ -364,3 +366,28 @@ def test_serialize_as_unit() -> None:
     m_json = m.model_dump(mode="json")
     assert m_json["field"]["value"] == 1e-3
     assert m_json["field"]["unit"] == "m"
+
+
+def test_custom_encoding() -> None:
+    """Test a custom encoding of quantities"""
+
+    def serialize(q: u.Quantity) -> dict:
+        return {"mag": q.value, "u": str(q.unit)}
+
+    def validate(val: ty.Any) -> u.Quantity:
+        if isinstance(val, u.Quantity):
+            return val
+        return u.Quantity(val["mag"], val["u"])
+
+    encoding = Encoding(
+        serializer=serialize,
+        before_validator=validate,
+        json_schema=core_schema.dict_schema(),
+    )
+
+    class Model(pydantic.BaseModel):
+        field: ty.Annotated[u.Quantity, QuantityAdapter(scalar=True, encoding=encoding)]
+
+    m = Model(field={"mag": 5, "u": "kg"})
+    assert m.field == 5 * u.kg
+    assert m.model_dump(mode="json") == {"field": {"mag": 5.0, "u": "kg"}}
