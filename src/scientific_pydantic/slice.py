@@ -7,7 +7,7 @@ from collections.abc import Hashable, Mapping, Sequence
 import pydantic
 from pydantic_core import core_schema
 
-from .schema import make_core_schema
+from .schema import Encoding, make_core_schema
 from .slice_syntax import (
     SliceSyntaxError,
     format_slice_syntax,
@@ -42,18 +42,21 @@ class SliceAdapter:
 
     Parameters
     ----------
-    default_type : Hashable
+    default_type
         The default type annotation for all 3 elements of the slice. This should
         normally include `None` unless all 3 elements are always required..
-    start_type : Hashable
+    start_type
         If given, overrides `default_type` as the type annotation for the start
         of the slice.
-    stop_type : Hashable
+    stop_type
         If given, overrides `default_type` as the type annotation for the stop
         of the slice.
-    step_type : Hashable
+    step_type
         If given, overrides `default_type` as the type annotation for the step
         of the slice.
+    encoding
+        A custom encoding for this type
+
 
     Examples
     --------
@@ -80,6 +83,7 @@ class SliceAdapter:
         start_type: Hashable = UNSET,
         stop_type: Hashable = UNSET,
         step_type: Hashable = UNSET,
+        encoding: Encoding | None = None,
     ) -> None:
         adapters = {
             t: pydantic.TypeAdapter(t)
@@ -96,6 +100,7 @@ class SliceAdapter:
         self._step_adapter = (
             adapters[step_type] if step_type is not UNSET else self._default_adapter
         )
+        self._encoding = encoding if encoding is not None else self._default_encoding()
 
     def __get_pydantic_core_schema__(
         self,
@@ -125,9 +130,27 @@ class SliceAdapter:
 
         return make_core_schema(
             slice,
+            encoding=self._encoding,
+            after_validators=[_validate],
+        )
+
+    def _default_encoding(self) -> Encoding[slice]:
+        def _serialize(value: slice) -> str | dict[str, ty.Any]:
+            if all(
+                x is None or isinstance(x, numbers.Number)
+                for x in (value.start, value.stop, value.step)
+            ):
+                return format_slice_syntax(value.start, value.stop, value.step)
+
+            return {
+                "start": value.start,
+                "stop": value.stop,
+                "step": value.step,
+            }
+
+        return Encoding(
             serializer=_serialize,
             before_validator=_validate_slice,
-            after_validators=[_validate],
             json_schema=core_schema.union_schema(
                 [
                     core_schema.str_schema(),
@@ -155,9 +178,6 @@ class SliceAdapter:
                 ],
             ),
         )
-
-
-IntSliceAdapter = SliceAdapter(int | None)
 
 
 def _from_mapping(value: Mapping[str, ty.Any]) -> tuple[ty.Any, ty.Any, ty.Any]:
@@ -203,3 +223,6 @@ def _validate_slice(value: ty.Any) -> slice:
             raise ValueError(msg)
 
     return slice(start, stop, step)
+
+
+IntSliceAdapter = SliceAdapter(int | None)

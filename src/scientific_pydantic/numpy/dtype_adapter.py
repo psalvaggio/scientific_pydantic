@@ -6,7 +6,7 @@ import typing as ty
 
 from pydantic_core import PydanticCustomError, core_schema
 
-from scientific_pydantic.schema import make_core_schema
+from scientific_pydantic.schema import Encoding, make_core_schema
 
 if ty.TYPE_CHECKING:
     import numpy as np
@@ -58,9 +58,11 @@ class DTypeAdapter:
 
         return make_core_schema(
             np.dtype,
-            serializer=lambda dt: dt.str,
-            before_validator=_validate,
-            json_schema=core_schema.str_schema(),
+            encoding=Encoding(
+                serializer=lambda dt: dt.str,
+                before_validator=_validate,
+                json_schema=core_schema.str_schema(),
+            ),
         )
 
     def __get_pydantic_json_schema__(

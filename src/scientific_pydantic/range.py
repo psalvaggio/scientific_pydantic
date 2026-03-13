@@ -6,7 +6,7 @@ import pydantic
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import PydanticCustomError, core_schema
 
-from .schema import make_core_schema
+from .schema import Encoding, make_core_schema
 from .slice_syntax import (
     SliceSyntaxError,
     format_slice_syntax,
@@ -47,10 +47,12 @@ class RangeAdapter:
         """Get the pydantic schema for this type"""
         return make_core_schema(
             range,
-            serializer=_serialize,
-            before_validator=_validate,
-            json_schema=core_schema.str_schema(
-                pattern=r"^\s*-?\d+\s*:\s*-?\d+\s*(?::\s*-?\d+\s*)?$"
+            encoding=Encoding(
+                serializer=_serialize,
+                before_validator=_validate,
+                json_schema=core_schema.str_schema(
+                    pattern=r"^\s*-?\d+\s*:\s*-?\d+\s*(?::\s*-?\d+\s*)?$"
+                ),
             ),
         )
 

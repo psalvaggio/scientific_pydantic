@@ -4,8 +4,9 @@ import typing as ty
 
 import pydantic
 import pytest
+from pydantic_core import core_schema
 
-from scientific_pydantic import IntSliceAdapter, SliceAdapter
+from scientific_pydantic import Encoding, IntSliceAdapter, SliceAdapter
 
 
 class IntModel(pydantic.BaseModel):
@@ -127,3 +128,28 @@ def test_union_members() -> None:
 
     assert Model(s=(1, "s", 2)).s == slice(1, "s", 2)  # type: ignore[bad-argument-type]
     assert Model(s=(1, 0, 2)).s == slice(1, 0, 2)  # type: ignore[bad-argument-type]
+
+
+def test_custom_encoding() -> None:
+    """Test a custom encoding of a slice"""
+
+    def serialize(s: slice) -> str:
+        return f"{s.start}::{s.stop}::{s.step}"
+
+    def validate(val: ty.Any) -> slice:
+        if isinstance(val, slice):
+            return val
+        return slice(*val.split("::"))
+
+    encoding = Encoding(
+        serializer=serialize,
+        before_validator=validate,
+        json_schema=core_schema.str_schema(),
+    )
+
+    class Model(pydantic.BaseModel):
+        field: ty.Annotated[slice, SliceAdapter(int, encoding=encoding)]
+
+    m = Model(field="1::2::3")  # type: ignore[bad-argument-type]
+    assert m.field == slice(1, 2, 3)
+    assert m.model_dump(mode="json") == {"field": "1::2::3"}

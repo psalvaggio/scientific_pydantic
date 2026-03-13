@@ -11,8 +11,10 @@ import pydantic
 import pytest
 import scipy
 from pydantic import BaseModel
+from pydantic_core import core_schema
 from scipy.spatial.transform import Rotation
 
+from scientific_pydantic import Encoding
 from scientific_pydantic.scipy.spatial.transform import RotationAdapter
 from scientific_pydantic.version_check import version_lt
 
@@ -420,3 +422,19 @@ def test_json_schema() -> None:
         "type": "object",
         "additionalProperties": True,
     }
+
+
+def test_custom_encoding() -> None:
+    """Test a custom encoding"""
+    encoding = Encoding[Rotation](
+        serializer=lambda r: r.as_matrix().tolist(),
+        before_validator=Rotation.from_matrix,
+        json_schema=core_schema.list_schema(),
+    )
+
+    class Model(pydantic.BaseModel):
+        field: ty.Annotated[Rotation, RotationAdapter(encoding=encoding)]
+
+    m = Model(field=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    npt.assert_allclose(m.field.as_matrix(), np.eye(3))
+    assert m.model_dump(mode="json") == {"field": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]}

@@ -12,7 +12,7 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, PydanticCustomError, core_schema
 
 from scientific_pydantic.numpy import NDArrayAdapter
-from scientific_pydantic.schema import make_core_schema
+from scientific_pydantic.schema import Encoding, make_core_schema
 from scientific_pydantic.version_check import version_ge
 
 if ty.TYPE_CHECKING:
@@ -95,6 +95,8 @@ class RotationAdapter:
     shape : Sequence[int | range | slice | None] | None
         If given, provides a constraint on the shape of the given rotations.
         Overrides `ndim`.
+    encoding : Encoding | None
+        A custom encoding for this type
 
     Examples
     --------
@@ -119,6 +121,7 @@ class RotationAdapter:
         single: bool | None = None,
         ndim: int | None = None,
         shape: Sequence[EllipsisLiteral | int | range | slice | None] | None = None,
+        encoding: Encoding | None = None,
     ) -> None:
 
         self._shape_spec: (
@@ -137,6 +140,8 @@ class RotationAdapter:
         ):
             msg = "N-D shape constraints on Rotation require scipy >= 1.17.0"
             raise pydantic.PydanticSchemaGenerationError(msg)
+
+        self._encoding = encoding if encoding is not None else _default_encoding()
 
     def __get_pydantic_core_schema__(
         self,
@@ -172,14 +177,10 @@ class RotationAdapter:
 
             after_validators.append(_val)
 
-        # When deserialising from JSON/dict Pydantic passes a Python object
-        # after JSON parsing, so the same validator works for both paths.
         return make_core_schema(
             Rotation,
-            serializer=_rotation_to_dict,
-            before_validator=_validate_rotation,
+            encoding=self._encoding,
             after_validators=after_validators,
-            json_schema=core_schema.dict_schema(),
         )
 
 
@@ -334,6 +335,14 @@ def _validate_rotation(value: ty.Any) -> Rotation:
         '"quat", "matrix", "rotvec", "mrp", "euler" or "davenport".'
     )
     raise PydanticCustomError(err_t, msg, {"val_t": repr(type(value))})
+
+
+def _default_encoding() -> Encoding[Rotation]:
+    return Encoding(
+        serializer=_rotation_to_dict,
+        before_validator=_validate_rotation,
+        json_schema=core_schema.dict_schema(),
+    )
 
 
 @functools.cache
