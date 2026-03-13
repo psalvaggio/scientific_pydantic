@@ -7,10 +7,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/scientific-pydantic)](https://pypi.org/project/scientific-pydantic/)
 [![Conda Version](https://img.shields.io/conda/v/conda-forge/scientific-pydantic)](https://anaconda.org/conda-forge/scientific-pydantic)
 
-<div style="display: flex; align-items: center; justify-content: center;">
-  <img src="img/logo.svg" width="260" style="gap: 20px;"/>
-  <img src="img/name.svg" width="300" />
-</div>
+<object type="image/svg+xml" data="img/logo_with_name.svg"></object>
 
 `scientific_pydantic` is an extension module to
 [`pydantic`](https://docs.pydantic.dev/latest/) that adds support for a number
@@ -98,7 +95,7 @@ description of the parameters each one takes.
 ### Customization
 
 All type adapters in this library come bundled with a default
-[Encoding](api/scientific_pydantic/#scientific_pydantic.Encoding), which
+[Encoding](api/scientific_pydantic/index.md#scientific_pydantic.Encoding), which
 describes how the type is serialized and validated from JSON-serializable types.
 
 While these defaults should work for many use cases, it may be desirable to
