@@ -5,10 +5,10 @@ import typing as ty
 from collections.abc import Hashable, Mapping, Sequence
 
 import pydantic
-from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import core_schema
 
-from scientific_pydantic.slice_syntax import (
+from .schema import make_core_schema
+from .slice_syntax import (
     SliceSyntaxError,
     format_slice_syntax,
     parse_slice_syntax,
@@ -104,23 +104,10 @@ class SliceAdapter:
     ) -> core_schema.CoreSchema:
         """Get the pydantic schema for this type"""
 
-        def _validate(value: ty.Any) -> slice:
-            match value:
-                case slice():
-                    return value
-                case Mapping():
-                    start, stop, step = _from_mapping(value)
-                case str():
-                    start, stop, step = _from_str(value)
-                case Sequence():
-                    start, stop, step = _from_sequence(value)
-                case _:
-                    msg = "Expected a slice, sequence, mapping or str"
-                    raise ValueError(msg)
-
-            start = self._start_adapter.validate_python(start)
-            stop = self._stop_adapter.validate_python(stop)
-            step = self._step_adapter.validate_python(step)
+        def _validate(value: slice) -> slice:
+            start = self._start_adapter.validate_python(value.start)
+            stop = self._stop_adapter.validate_python(value.stop)
+            step = self._step_adapter.validate_python(value.step)
             return slice(start, stop, step)
 
         def _serialize(value: slice) -> str | dict[str, ty.Any]:
@@ -136,22 +123,12 @@ class SliceAdapter:
                 "step": value.step,
             }
 
-        return core_schema.no_info_plain_validator_function(
-            _validate,
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                _serialize,
-                when_used="json",
-            ),
-        )
-
-    def __get_pydantic_json_schema__(
-        self,
-        _core_schema: core_schema.CoreSchema,
-        handler: pydantic.GetJsonSchemaHandler,
-    ) -> JsonSchemaValue:
-        """Get the JSON schema for this object"""
-        return handler(
-            core_schema.union_schema(
+        return make_core_schema(
+            slice,
+            serializer=_serialize,
+            before_validator=_validate_slice,
+            after_validators=[_validate],
+            json_schema=core_schema.union_schema(
                 [
                     core_schema.str_schema(),
                     core_schema.list_schema(min_length=1, max_length=3),
@@ -209,3 +186,20 @@ def _from_sequence(value: Sequence[ty.Any]) -> tuple[ty.Any, ty.Any, ty.Any]:
         return tuple(value)
     msg = "A sequence input to slice must have 1-3 elements"
     raise ValueError(msg)
+
+
+def _validate_slice(value: ty.Any) -> slice:
+    match value:
+        case slice():
+            return value
+        case Mapping():
+            start, stop, step = _from_mapping(value)
+        case str():
+            start, stop, step = _from_str(value)
+        case Sequence():
+            start, stop, step = _from_sequence(value)
+        case _:
+            msg = "Expected a slice, sequence, mapping or str"
+            raise ValueError(msg)
+
+    return slice(start, stop, step)

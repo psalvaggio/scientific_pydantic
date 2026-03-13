@@ -7,6 +7,8 @@ import typing as ty
 import pydantic
 from pydantic_core import core_schema
 
+from scientific_pydantic.schema import make_core_schema
+
 
 class PhysicalTypeAdapter:
     """A pydantic adapter for astropy.units.PhysicalType
@@ -53,26 +55,21 @@ class PhysicalTypeAdapter:
             )
             raise pydantic.PydanticSchemaGenerationError(msg)
 
-        validator = core_schema.no_info_plain_validator_function(validate_physical_type)
-
-        return core_schema.json_or_python_schema(
-            json_schema=core_schema.chain_schema([core_schema.str_schema(), validator]),
-            python_schema=validator,
-            serialization=core_schema.to_string_ser_schema(
-                when_used="json-unless-none"
-            ),
+        return make_core_schema(
+            u.PhysicalType,
+            serializer=str,
+            before_validator=validate_physical_type,
+            json_schema=core_schema.str_schema(),
         )
 
     def __get_pydantic_json_schema__(
         self,
-        core_schema_: core_schema.CoreSchema,
+        core_schema: core_schema.CoreSchema,
         handler: pydantic.json_schema.GetJsonSchemaHandler,
     ) -> pydantic.json_schema.JsonSchemaValue:
         """Get the JSON schema for this type"""
-        del core_schema_
-
         desc = "An astropy PhysicalType expressed as a string."
-        return handler(core_schema.str_schema()) | {
+        return handler(core_schema) | {
             "description": desc,
             "examples": ["length", "area"],
         }

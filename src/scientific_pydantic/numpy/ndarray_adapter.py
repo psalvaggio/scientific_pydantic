@@ -8,6 +8,8 @@ import pydantic
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import core_schema
 
+from scientific_pydantic.schema import make_core_schema
+
 if ty.TYPE_CHECKING:
     import numpy as np
 
@@ -104,6 +106,8 @@ class NDArrayAdapter:
     ) -> None:
         from .validators import NDArrayValidator
 
+        self._validate_json = NDArrayValidator.from_kwargs(dtype=dtype)
+
         self._validator = NDArrayValidator.from_kwargs(
             dtype=dtype,
             ndim=ndim,
@@ -114,6 +118,11 @@ class NDArrayAdapter:
             le=le,
             clip=clip,
         )
+        self._validators = [
+            val
+            for f in NDArrayValidator.model_fields
+            if (val := getattr(self._validator, f)) is not None
+        ]
 
     def __get_pydantic_core_schema__(
         self,
@@ -123,43 +132,21 @@ class NDArrayAdapter:
         """Get the pydantic schema for an NDArray"""
         import numpy as np
 
-        def validate(value: ty.Any) -> np.typing.NDArray:
-            return self._validator(value)
-
-        def serialize(value: np.typing.NDArray) -> list:
-            """Serialize ndarray to nested lists for JSON"""
-            return value.tolist()
-
-        python_schema = core_schema.no_info_after_validator_function(
-            validate,
-            core_schema.any_schema(),
-        )
-
-        return core_schema.json_or_python_schema(
-            json_schema=core_schema.chain_schema(
-                [
-                    core_schema.any_schema(),
-                    core_schema.no_info_after_validator_function(
-                        validate,
-                        core_schema.any_schema(),
-                    ),
-                ],
-            ),
-            python_schema=python_schema,
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                serialize,
-                info_arg=False,
-                return_schema=core_schema.any_schema(),
-            ),
+        return make_core_schema(
+            np.ndarray,
+            serializer=lambda a: a.tolist(),
+            before_validator=self._validate_json,
+            after_validators=self._validators,
+            json_schema=core_schema.list_schema(),
         )
 
     def __get_pydantic_json_schema__(  # noqa: C901
         self,
-        _core_schema: core_schema.CoreSchema,
-        _handler: pydantic.GetJsonSchemaHandler,
+        core_schema: core_schema.CoreSchema,
+        handler: pydantic.GetJsonSchemaHandler,
     ) -> JsonSchemaValue:
         """Generate JSON schema for the ndarray field"""
-        json_schema: dict[str, ty.Any] = {"type": "array"}
+        json_schema = handler(core_schema)
 
         # Add description of constraints
         constraints = []

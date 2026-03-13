@@ -12,6 +12,7 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, PydanticCustomError, core_schema
 
 from scientific_pydantic.numpy import NDArrayAdapter
+from scientific_pydantic.schema import make_core_schema
 from scientific_pydantic.version_check import version_ge
 
 if ty.TYPE_CHECKING:
@@ -140,12 +141,10 @@ class RotationAdapter:
     def __get_pydantic_core_schema__(
         self,
         source_type: ty.Any,
-        handler: GetCoreSchemaHandler,
+        _handler: GetCoreSchemaHandler,
     ) -> CoreSchema:
         """Get the pydantic schema for this type"""
         from scipy.spatial.transform import Rotation
-
-        del handler
 
         if source_type is not Rotation:
             msg = (
@@ -154,10 +153,7 @@ class RotationAdapter:
             )
             raise pydantic.PydanticSchemaGenerationError(msg)
 
-        # Accept any Python object and run our validator.
-        python_schema = core_schema.no_info_plain_validator_function(
-            _validate_rotation,
-        )
+        after_validators: list[ty.Callable] = []
         if self._shape_spec is not None:
             from scientific_pydantic.numpy.validators import validate_shape
 
@@ -174,23 +170,16 @@ class RotationAdapter:
                 msg = "Rotation object shape {shape} did not match spec {spec}"
                 raise PydanticCustomError(err_t, msg, {"shape": shape, "spec": spec})
 
-            python_schema = core_schema.chain_schema(
-                [
-                    python_schema,
-                    core_schema.no_info_plain_validator_function(_val),
-                ]
-            )
+            after_validators.append(_val)
 
         # When deserialising from JSON/dict Pydantic passes a Python object
         # after JSON parsing, so the same validator works for both paths.
-        return core_schema.json_or_python_schema(
-            json_schema=python_schema,
-            python_schema=python_schema,
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                _rotation_to_dict,
-                when_used="json-unless-none",
-                return_schema=core_schema.dict_schema(),
-            ),
+        return make_core_schema(
+            Rotation,
+            serializer=_rotation_to_dict,
+            before_validator=_validate_rotation,
+            after_validators=after_validators,
+            json_schema=core_schema.dict_schema(),
         )
 
 

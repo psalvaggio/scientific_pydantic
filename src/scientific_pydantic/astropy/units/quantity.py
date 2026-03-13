@@ -11,6 +11,7 @@ from pydantic import PydanticSchemaGenerationError
 from pydantic_core import PydanticCustomError, core_schema
 
 from scientific_pydantic.astropy.units.validators import validate_physical_type
+from scientific_pydantic.schema import make_core_schema
 
 if ty.TYPE_CHECKING:
     import types
@@ -204,42 +205,33 @@ class QuantityAdapter:
         _handler: GetCoreSchemaHandler,
     ) -> core_schema.CoreSchema:
         """Get the pydantic schema for this type"""
+        import astropy.units as u
+
         validators = [
-            core_schema.no_info_plain_validator_function(func)
+            func
             for field in dataclasses.fields(self._validators)
             if (func := getattr(self._validators, field.name)) is not None
         ]
 
-        return core_schema.json_or_python_schema(
-            json_schema=core_schema.chain_schema(
-                [
-                    core_schema.no_info_plain_validator_function(_validate_quantity),
-                    *validators,
-                ],
+        return make_core_schema(
+            u.Quantity,
+            serializer=functools.partial(
+                _serialize, serialize_as_unit=self._serialize_as_unit
             ),
-            python_schema=core_schema.chain_schema(
-                [
-                    core_schema.no_info_plain_validator_function(_validate_quantity),
-                    *validators,
-                ],
-            ),
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                functools.partial(
-                    _serialize, serialize_as_unit=self._serialize_as_unit
-                ),
-                info_arg=True,
-                when_used="unless-none",
-            ),
+            before_validator=_validate_quantity,
+            after_validators=validators,
+            json_schema=core_schema.any_schema(),
+            serializer_when_used="unless-none",
         )
 
     @classmethod
     def __get_pydantic_json_schema__(
         cls,
-        _core_schema: core_schema.CoreSchema,
+        core_schema: core_schema.CoreSchema,
         handler: pydantic.GetJsonSchemaHandler,
     ) -> JsonSchemaValue:
         """Generate JSON schema for the ndarray field"""
-        schema = handler(core_schema.any_schema())
+        schema = handler(core_schema)
         schema["description"] = "An encoding of an astropy.units.Quantity"
         return schema
 

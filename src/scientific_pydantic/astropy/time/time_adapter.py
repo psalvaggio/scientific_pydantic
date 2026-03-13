@@ -10,6 +10,8 @@ from collections.abc import Mapping, Sequence
 import pydantic
 from pydantic_core import PydanticCustomError, core_schema
 
+from scientific_pydantic.schema import make_core_schema
+
 if ty.TYPE_CHECKING:
     import types
 
@@ -78,15 +80,13 @@ class TimeAdapter:
         le: ty.Any = None,
         lt: ty.Any = None,
     ) -> None:
-
+        from scientific_pydantic.astropy.validators import ArrayShapeValidator
         from scientific_pydantic.numpy.validators import (
             validate_all_ge,
             validate_all_gt,
             validate_all_le,
             validate_all_lt,
         )
-
-        from ..validators import ArrayShapeValidator
 
         @dataclasses.dataclass
         class CtorValidators:
@@ -124,23 +124,18 @@ class TimeAdapter:
         _handler: GetCoreSchemaHandler,
     ) -> core_schema.CoreSchema:
         """Get the pydantic schema for this type"""
-        to_time = core_schema.no_info_plain_validator_function(_validate_time)
-        validators = core_schema.chain_schema(
-            [to_time]
-            + [
-                core_schema.no_info_plain_validator_function(func)
+        from astropy.time import Time
+
+        return make_core_schema(
+            Time,
+            serializer=_serialize_json,
+            before_validator=_validate_time,
+            after_validators=[
+                func
                 for field in dataclasses.fields(self._validators)
                 if (func := getattr(self._validators, field.name)) is not None
-            ]
-        )
-
-        return core_schema.json_or_python_schema(
-            json_schema=validators,
-            python_schema=validators,
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                _serialize_json,
-                when_used="json-unless-none",
-            ),
+            ],
+            json_schema=core_schema.dict_schema(),
         )
 
 
