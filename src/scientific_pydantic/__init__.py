@@ -19,11 +19,13 @@ from importlib.metadata import PackageNotFoundError, version
 from . import astropy, numpy, scipy, shapely
 from .ellipsis import EllipsisAdapter, EllipsisLiteral
 from .range import RangeAdapter
+from .schema import Encoding
 from .slice import IntSliceAdapter, SliceAdapter
 
 __all__ = [
     "EllipsisAdapter",
     "EllipsisLiteral",
+    "Encoding",
     "IntSliceAdapter",
     "RangeAdapter",
     "SliceAdapter",

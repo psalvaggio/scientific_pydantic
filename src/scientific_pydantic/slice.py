@@ -7,7 +7,7 @@ from collections.abc import Hashable, Mapping, Sequence
 import pydantic
 from pydantic_core import core_schema
 
-from .schema import make_core_schema
+from .schema import Encoding, make_core_schema
 from .slice_syntax import (
     SliceSyntaxError,
     format_slice_syntax,
@@ -125,9 +125,33 @@ class SliceAdapter:
 
         return make_core_schema(
             slice,
+            encoding=self._default_encoding(),
+            after_validators=[_validate],
+        )
+
+    def _default_encoding(self) -> Encoding[slice]:
+        def _validate(value: slice) -> slice:
+            start = self._start_adapter.validate_python(value.start)
+            stop = self._stop_adapter.validate_python(value.stop)
+            step = self._step_adapter.validate_python(value.step)
+            return slice(start, stop, step)
+
+        def _serialize(value: slice) -> str | dict[str, ty.Any]:
+            if all(
+                x is None or isinstance(x, numbers.Number)
+                for x in (value.start, value.stop, value.step)
+            ):
+                return format_slice_syntax(value.start, value.stop, value.step)
+
+            return {
+                "start": value.start,
+                "stop": value.stop,
+                "step": value.step,
+            }
+
+        return Encoding(
             serializer=_serialize,
             before_validator=_validate_slice,
-            after_validators=[_validate],
             json_schema=core_schema.union_schema(
                 [
                     core_schema.str_schema(),

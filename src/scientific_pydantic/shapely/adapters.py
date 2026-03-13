@@ -9,7 +9,7 @@ from collections.abc import Mapping
 import pydantic
 from pydantic_core import PydanticCustomError, core_schema
 
-from scientific_pydantic.schema import make_core_schema
+from scientific_pydantic.schema import Encoding, make_core_schema
 
 if ty.TYPE_CHECKING:
     from numpy.typing import ArrayLike, NDArray
@@ -171,6 +171,8 @@ class GeometryAdapter:
         If given, bounds for the y-coordinates of the geometry.
     z_bounds
         If given, bounds for the z-coordinates of the geometry.
+    encoding
+        A custom encoding for this type
 
     Examples
     --------
@@ -203,6 +205,7 @@ class GeometryAdapter:
         x_bounds: CoordinateBounds | None = None,
         y_bounds: CoordinateBounds | None = None,
         z_bounds: CoordinateBounds | None = None,
+        encoding: Encoding | None = None,
     ) -> None:
         self._validator = GeometryConstraints(
             dimensionality=dimensionality,
@@ -210,6 +213,7 @@ class GeometryAdapter:
             y_bounds=y_bounds,
             z_bounds=z_bounds,
         )
+        self._encoding = encoding
 
     def __get_pydantic_core_schema__(
         self,
@@ -267,12 +271,16 @@ class GeometryAdapter:
 
         return make_core_schema(
             shapely.geometry.base.BaseGeometry,
-            serializer=lambda s: s.__geo_interface__,
-            before_validator=_validate,
-            after_validators=[_validate_type, self._validator],
-            json_schema=core_schema.union_schema(
-                [core_schema.str_schema(), core_schema.dict_schema()]
+            encoding=self._encoding
+            if self._encoding is not None
+            else Encoding(
+                serializer=lambda s: s.__geo_interface__,
+                before_validator=_validate,
+                json_schema=core_schema.union_schema(
+                    [core_schema.str_schema(), core_schema.dict_schema()]
+                ),
             ),
+            after_validators=[_validate_type, self._validator],
         )
 
     def __get_pydantic_json_schema__(

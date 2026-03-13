@@ -5,7 +5,7 @@ from __future__ import annotations
 import dataclasses
 import typing as ty
 
-from scientific_pydantic.schema import make_core_schema
+from scientific_pydantic.schema import Encoding, make_core_schema
 
 if ty.TYPE_CHECKING:
     import astropy.units as u
@@ -125,10 +125,12 @@ class UnitAdapter:
 
         return make_core_schema(
             u.UnitBase,
-            serializer=str,
-            before_validator=validate_unit,
+            encoding=Encoding(
+                serializer=str,
+                before_validator=validate_unit,
+                json_schema=core_schema.str_schema(),
+            ),
             after_validators=validators,
-            json_schema=core_schema.str_schema(),
         )
 
     def __get_pydantic_json_schema__(

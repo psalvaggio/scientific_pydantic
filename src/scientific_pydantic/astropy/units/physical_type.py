@@ -7,7 +7,7 @@ import typing as ty
 import pydantic
 from pydantic_core import core_schema
 
-from scientific_pydantic.schema import make_core_schema
+from scientific_pydantic.schema import Encoding, make_core_schema
 
 
 class PhysicalTypeAdapter:
@@ -57,9 +57,11 @@ class PhysicalTypeAdapter:
 
         return make_core_schema(
             u.PhysicalType,
-            serializer=str,
-            before_validator=validate_physical_type,
-            json_schema=core_schema.str_schema(),
+            encoding=Encoding(
+                serializer=str,
+                before_validator=validate_physical_type,
+                json_schema=core_schema.str_schema(),
+            ),
         )
 
     def __get_pydantic_json_schema__(

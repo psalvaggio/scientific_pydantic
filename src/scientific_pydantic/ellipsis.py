@@ -6,7 +6,7 @@ import typing as ty
 import pydantic
 from pydantic_core import core_schema
 
-from .schema import make_core_schema
+from .schema import Encoding, make_core_schema
 
 
 class EllipsisAdapter:
@@ -55,9 +55,11 @@ class EllipsisAdapter:
 
         return make_core_schema(
             types.EllipsisType,
-            serializer=lambda _: "...",
-            before_validator=_validate,
-            json_schema=core_schema.literal_schema(["..."]),
+            encoding=Encoding(
+                serializer=lambda _: "...",
+                before_validator=_validate,
+                json_schema=core_schema.literal_schema(["..."]),
+            ),
         )
 
 

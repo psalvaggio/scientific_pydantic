@@ -8,7 +8,7 @@ import pydantic
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import core_schema
 
-from scientific_pydantic.schema import make_core_schema
+from scientific_pydantic.schema import Encoding, make_core_schema
 
 if ty.TYPE_CHECKING:
     import numpy as np
@@ -72,6 +72,8 @@ class NDArrayAdapter:
     clip
         If not `(None, None)`, the array will be passed through
         `numpy.clip(array, clip[0], clip[1])` to bound the values.
+    encoding
+        A custom encoding for this type
 
     Examples
     --------
@@ -103,6 +105,7 @@ class NDArrayAdapter:
         lt: float | None = None,
         le: float | None = None,
         clip: tuple[float | None, float | None] = (None, None),
+        encoding: Encoding | None = None,
     ) -> None:
         from .validators import NDArrayValidator
 
@@ -123,6 +126,7 @@ class NDArrayAdapter:
             for f in NDArrayValidator.model_fields
             if (val := getattr(self._validator, f)) is not None
         ]
+        self._encoding = encoding if encoding is not None else self._default_encoding()
 
     def __get_pydantic_core_schema__(
         self,
@@ -134,10 +138,8 @@ class NDArrayAdapter:
 
         return make_core_schema(
             np.ndarray,
-            serializer=lambda a: a.tolist(),
-            before_validator=self._validate_json,
+            encoding=self._encoding,
             after_validators=self._validators,
-            json_schema=core_schema.list_schema(),
         )
 
     def __get_pydantic_json_schema__(  # noqa: C901
@@ -189,3 +191,11 @@ class NDArrayAdapter:
             json_schema["items"] = items_schema
 
         return json_schema
+
+    def _default_encoding(self) -> Encoding["np.ndarray"]:
+        """Get the default encoding for this type"""
+        return Encoding(
+            serializer=lambda a: a.tolist(),
+            before_validator=self._validate_json,
+            json_schema=core_schema.list_schema(),
+        )

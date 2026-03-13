@@ -10,7 +10,7 @@ from collections.abc import Mapping, Sequence
 import pydantic
 from pydantic_core import PydanticCustomError, core_schema
 
-from scientific_pydantic.schema import make_core_schema
+from scientific_pydantic.schema import Encoding, make_core_schema
 
 if ty.TYPE_CHECKING:
     import types
@@ -51,6 +51,8 @@ class TimeAdapter:
     shape
         Shape specifier for the given time(s). See `NDArrayValidator` for a
         description of how this works.
+    encoding
+        A custom encoding for this type
 
     Examples
     --------
@@ -79,6 +81,7 @@ class TimeAdapter:
         gt: ty.Any = None,
         le: ty.Any = None,
         lt: ty.Any = None,
+        encoding: Encoding | None = None,
     ) -> None:
         from scientific_pydantic.astropy.validators import ArrayShapeValidator
         from scientific_pydantic.numpy.validators import (
@@ -117,6 +120,7 @@ class TimeAdapter:
             shape=ArrayShapeValidator(scalar=scalar, ndim=ndim, shape=shape),
             **validators,
         )
+        self._encoding = encoding if encoding is not None else self._default_encoding()
 
     def __get_pydantic_core_schema__(
         self,
@@ -128,13 +132,18 @@ class TimeAdapter:
 
         return make_core_schema(
             Time,
-            serializer=_serialize_json,
-            before_validator=_validate_time,
+            encoding=self._encoding,
             after_validators=[
                 func
                 for field in dataclasses.fields(self._validators)
                 if (func := getattr(self._validators, field.name)) is not None
             ],
+        )
+
+    def _default_encoding(self) -> Encoding[Time]:
+        return Encoding(
+            serializer=_serialize_json,
+            before_validator=_validate_time,
             json_schema=core_schema.dict_schema(),
         )
 

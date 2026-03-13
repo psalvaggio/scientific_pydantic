@@ -11,7 +11,7 @@ from pydantic import PydanticSchemaGenerationError
 from pydantic_core import PydanticCustomError, core_schema
 
 from scientific_pydantic.astropy.units.validators import validate_physical_type
-from scientific_pydantic.schema import make_core_schema
+from scientific_pydantic.schema import Encoding, make_core_schema
 
 if ty.TYPE_CHECKING:
     import types
@@ -79,6 +79,11 @@ class QuantityAdapter:
         If given, a 2-element sequence of [min_clip, max_clip] to which to clip
         the values in the quantity. If no units are provided, then
         `equivalent_unit` is used (if provided).
+    serialize_as_unit
+        If given, the quantity will be converted to this unit during
+        serialization.
+    encoding
+        A custom encoding for this type
 
     Examples
     --------
@@ -113,6 +118,7 @@ class QuantityAdapter:
         le: ArrayLike | u.Quantity | None = None,
         clip: Sequence[ArrayLike | u.Quantity | None] | u.Quantity = (None, None),
         serialize_as_unit: u.UnitBase | None = None,
+        encoding: Encoding | None = None,
     ) -> None:
         import astropy.units as u
         import numpy as np
@@ -198,6 +204,7 @@ class QuantityAdapter:
             shape=ArrayShapeValidator(scalar=scalar, ndim=ndim, shape=shape),
             **validators,  # type: ignore[bad-argument-type]
         )
+        self._encoding = encoding if encoding is not None else self._default_encoding()
 
     def __get_pydantic_core_schema__(
         self,
@@ -215,13 +222,8 @@ class QuantityAdapter:
 
         return make_core_schema(
             u.Quantity,
-            serializer=functools.partial(
-                _serialize, serialize_as_unit=self._serialize_as_unit
-            ),
-            before_validator=_validate_quantity,
+            encoding=self._encoding,
             after_validators=validators,
-            json_schema=core_schema.any_schema(),
-            serializer_when_used="unless-none",
         )
 
     @classmethod
@@ -234,6 +236,17 @@ class QuantityAdapter:
         schema = handler(core_schema)
         schema["description"] = "An encoding of an astropy.units.Quantity"
         return schema
+
+    def _default_encoding(self) -> Encoding[u.Quantity]:
+        """Get the default encoding for this type"""
+        return Encoding(
+            serializer=functools.partial(
+                _serialize, serialize_as_unit=self._serialize_as_unit
+            ),
+            before_validator=_validate_quantity,
+            json_schema=core_schema.any_schema(),
+            serializer_when_used="unless-none",
+        )
 
 
 def _serialize(
