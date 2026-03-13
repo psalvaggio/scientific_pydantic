@@ -406,6 +406,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#customization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -983,6 +1000,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#customization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1021,7 +1055,10 @@
 <a href="https://github.com/psalvaggio/scientific_pydantic/actions/workflows/pre-commit.yml"><img alt="Pre-commit" src="https://github.com/psalvaggio/scientific_pydantic/actions/workflows/pre-commit.yml/badge.svg" /></a>
 <a href="https://psalvaggio.github.io/scientific_pydantic/"><img alt="Docs" src="https://img.shields.io/badge/docs-Docs-blue?style=flat-square&amp;logo=github&amp;logoColor=white&amp;link=https://psalvaggio.github.io/scientific_pydantic/" /></a>
 <a href="https://coveralls.io/github/psalvaggio/scientific_pydantic?branch=main"><img alt="Coverage Status" src="https://coveralls.io/repos/github/psalvaggio/scientific_pydantic/badge.svg?branch=main" /></a>
-<a href="https://pypi.org/project/scientific-pydantic/"><img alt="PyPI - Version" src="https://img.shields.io/pypi/v/scientific-pydantic" /></a></p>
+<a href="https://pypi.org/project/scientific-pydantic/"><img alt="PyPI - Version" src="https://img.shields.io/pypi/v/scientific-pydantic" /></a>
+<a href="https://anaconda.org/conda-forge/scientific-pydantic"><img alt="Conda Version" src="https://img.shields.io/conda/v/conda-forge/scientific-pydantic" /></a></p>
+<object type="image/svg+xml" data="img/logo_with_name.svg"></object>
+
 <p><code>scientific_pydantic</code> is an extension module to
 <a href="https://docs.pydantic.dev/latest/"><code>pydantic</code></a> that adds support for a number
 of common data types in scientific computing.</p>
@@ -1090,6 +1127,14 @@ validation logic can be accomplished via:
 which constrains <code>a</code> to be an <code>N x 3</code> <code>ndarray</code> where all elements are
 non-negative. See the individual adapters in the API documentation for a
 description of the parameters each one takes.</p>
+<h3 id="customization">Customization<a class="headerlink" href="#customization" title="Permanent link">&para;</a></h3>
+<p>All type adapters in this library come bundled with a default
+<a href="api/scientific_pydantic/#scientific_pydantic.Encoding">Encoding</a>, which
+describes how the type is serialized and validated from JSON-serializable types.</p>
+<p>While these defaults should work for many use cases, it may be desirable to
+customize this encoding. Many adapters will support an <code>encoding=</code> keyword
+argument in their constructors for doing just this. See the <code>Encoding</code>
+documentation for an example.</p>
 <h2 id="design-philosophy">Design Philosophy<a class="headerlink" href="#design-philosophy" title="Permanent link">&para;</a></h2>
 <p>This library has an interesting conundrum from a dependency standpoint. Since
 the goal is to provide adapters for common types that come from many different

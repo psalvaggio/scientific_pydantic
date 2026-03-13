@@ -1173,6 +1173,27 @@ description of how this works.</p>
                   <code>None</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>encoding</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Encoding
+
+
+  
+      dataclass
+   (scientific_pydantic.schema.Encoding)" href="../../#scientific_pydantic.Encoding">Encoding</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A custom encoding for this type</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -1319,7 +1340,9 @@ description of how this works.</p>
 <span class="normal"><a href="#__codelineno-0-136">136</a></span>
 <span class="normal"><a href="#__codelineno-0-137">137</a></span>
 <span class="normal"><a href="#__codelineno-0-138">138</a></span>
-<span class="normal"><a href="#__codelineno-0-139">139</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="k">class</span><span class="w"> </span><span class="nc">TimeAdapter</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-139">139</a></span>
+<span class="normal"><a href="#__codelineno-0-140">140</a></span>
+<span class="normal"><a href="#__codelineno-0-141">141</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="k">class</span><span class="w"> </span><span class="nc">TimeAdapter</span><span class="p">:</span>
 <a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic adapter for astropy.time.Time</span>
 <a id="__codelineno-0-24" name="__codelineno-0-24"></a>
 <a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">    Validation Options</span>
@@ -1351,92 +1374,94 @@ description of how this works.</p>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">    shape</span>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">        Shape specifier for the given time(s). See `NDArrayValidator` for a</span>
 <a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">        description of how this works.</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Examples</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">    --------</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">    &gt;&gt;&gt; import typing as ty</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">    &gt;&gt;&gt; import pydantic</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">    &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    &gt;&gt;&gt; from astropy.time import Time</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    &gt;&gt;&gt; from scientific_pydantic.astropy.time import (</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">    ...     TimeAdapter,</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    ... )  # doctest: +NORMALIZE_WHITESPACE</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    &lt;BLANKLINE&gt;</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    &gt;&gt;&gt; class Model(pydantic.BaseModel):</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">    ...     t: ty.Annotated[Time, TimeAdapter()]  # doctest: +NORMALIZE_WHITESPACE</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">    &lt;BLANKLINE&gt;</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">    &gt;&gt;&gt; Model(t=&quot;2026-03-01T19:50:00&quot;)</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">    Model(t=&lt;Time object: scale=&#39;utc&#39; format=&#39;isot&#39; value=2026-03-01T19:50:00.000&gt;)</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a>
-<a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
-<a id="__codelineno-0-73" name="__codelineno-0-73"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-74" name="__codelineno-0-74"></a>        <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a>        <span class="n">scalar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76"></a>        <span class="n">ndim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77"></a>        <span class="n">shape</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">types</span><span class="o">.</span><span class="n">EllipsisType</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">range</span> <span class="o">|</span> <span class="nb">slice</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a>        <span class="n">ge</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79"></a>        <span class="n">gt</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-80" name="__codelineno-0-80"></a>        <span class="n">le</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-81" name="__codelineno-0-81"></a>        <span class="n">lt</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-82" name="__codelineno-0-82"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">scientific_pydantic.astropy.validators</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayShapeValidator</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">scientific_pydantic.numpy.validators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-0-85" name="__codelineno-0-85"></a>            <span class="n">validate_all_ge</span><span class="p">,</span>
-<a id="__codelineno-0-86" name="__codelineno-0-86"></a>            <span class="n">validate_all_gt</span><span class="p">,</span>
-<a id="__codelineno-0-87" name="__codelineno-0-87"></a>            <span class="n">validate_all_le</span><span class="p">,</span>
-<a id="__codelineno-0-88" name="__codelineno-0-88"></a>            <span class="n">validate_all_lt</span><span class="p">,</span>
-<a id="__codelineno-0-89" name="__codelineno-0-89"></a>        <span class="p">)</span>
-<a id="__codelineno-0-90" name="__codelineno-0-90"></a>
-<a id="__codelineno-0-91" name="__codelineno-0-91"></a>        <span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
-<a id="__codelineno-0-92" name="__codelineno-0-92"></a>        <span class="k">class</span><span class="w"> </span><span class="nc">CtorValidators</span><span class="p">:</span>
-<a id="__codelineno-0-93" name="__codelineno-0-93"></a>            <span class="n">shape</span><span class="p">:</span> <span class="n">ArrayShapeValidator</span>
-<a id="__codelineno-0-94" name="__codelineno-0-94"></a>            <span class="n">ge</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Time</span><span class="p">],</span> <span class="n">Time</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-95" name="__codelineno-0-95"></a>            <span class="n">gt</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Time</span><span class="p">],</span> <span class="n">Time</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-96" name="__codelineno-0-96"></a>            <span class="n">le</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Time</span><span class="p">],</span> <span class="n">Time</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-97" name="__codelineno-0-97"></a>            <span class="n">lt</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Time</span><span class="p">],</span> <span class="n">Time</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-98" name="__codelineno-0-98"></a>
-<a id="__codelineno-0-99" name="__codelineno-0-99"></a>        <span class="n">validators</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ty</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-100" name="__codelineno-0-100"></a>        <span class="k">for</span> <span class="n">bound</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="p">(</span>
-<a id="__codelineno-0-101" name="__codelineno-0-101"></a>            <span class="p">(</span><span class="n">gt</span><span class="p">,</span> <span class="s2">&quot;gt&quot;</span><span class="p">,</span> <span class="n">validate_all_gt</span><span class="p">),</span>
-<a id="__codelineno-0-102" name="__codelineno-0-102"></a>            <span class="p">(</span><span class="n">ge</span><span class="p">,</span> <span class="s2">&quot;ge&quot;</span><span class="p">,</span> <span class="n">validate_all_ge</span><span class="p">),</span>
-<a id="__codelineno-0-103" name="__codelineno-0-103"></a>            <span class="p">(</span><span class="n">lt</span><span class="p">,</span> <span class="s2">&quot;lt&quot;</span><span class="p">,</span> <span class="n">validate_all_lt</span><span class="p">),</span>
-<a id="__codelineno-0-104" name="__codelineno-0-104"></a>            <span class="p">(</span><span class="n">le</span><span class="p">,</span> <span class="s2">&quot;le&quot;</span><span class="p">,</span> <span class="n">validate_all_le</span><span class="p">),</span>
-<a id="__codelineno-0-105" name="__codelineno-0-105"></a>        <span class="p">):</span>
-<a id="__codelineno-0-106" name="__codelineno-0-106"></a>            <span class="k">if</span> <span class="n">bound</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-107" name="__codelineno-0-107"></a>                <span class="k">continue</span>
-<a id="__codelineno-0-108" name="__codelineno-0-108"></a>            <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-109" name="__codelineno-0-109"></a>                <span class="n">bound_t</span> <span class="o">=</span> <span class="n">_validate_time</span><span class="p">(</span><span class="n">bound</span><span class="p">)</span>
-<a id="__codelineno-0-110" name="__codelineno-0-110"></a>            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-111" name="__codelineno-0-111"></a>                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;while validating the </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> constraint:</span><span class="se">\n</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-112" name="__codelineno-0-112"></a>                <span class="k">raise</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">PydanticSchemaGenerationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-<a id="__codelineno-0-113" name="__codelineno-0-113"></a>
-<a id="__codelineno-0-114" name="__codelineno-0-114"></a>            <span class="n">validators</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">bound_t</span><span class="p">)</span>
-<a id="__codelineno-0-115" name="__codelineno-0-115"></a>
-<a id="__codelineno-0-116" name="__codelineno-0-116"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_validators</span> <span class="o">=</span> <span class="n">CtorValidators</span><span class="p">(</span>
-<a id="__codelineno-0-117" name="__codelineno-0-117"></a>            <span class="n">shape</span><span class="o">=</span><span class="n">ArrayShapeValidator</span><span class="p">(</span><span class="n">scalar</span><span class="o">=</span><span class="n">scalar</span><span class="p">,</span> <span class="n">ndim</span><span class="o">=</span><span class="n">ndim</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">),</span>
-<a id="__codelineno-0-118" name="__codelineno-0-118"></a>            <span class="o">**</span><span class="n">validators</span><span class="p">,</span>
-<a id="__codelineno-0-119" name="__codelineno-0-119"></a>        <span class="p">)</span>
-<a id="__codelineno-0-120" name="__codelineno-0-120"></a>
-<a id="__codelineno-0-121" name="__codelineno-0-121"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
-<a id="__codelineno-0-122" name="__codelineno-0-122"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-123" name="__codelineno-0-123"></a>        <span class="n">_source_type</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span>
-<a id="__codelineno-0-124" name="__codelineno-0-124"></a>        <span class="n">_handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span><span class="p">,</span>
-<a id="__codelineno-0-125" name="__codelineno-0-125"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">core_schema</span><span class="o">.</span><span class="n">CoreSchema</span><span class="p">:</span>
-<a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the pydantic schema for this type&quot;&quot;&quot;</span>
-<a id="__codelineno-0-127" name="__codelineno-0-127"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">astropy.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">Time</span>
-<a id="__codelineno-0-128" name="__codelineno-0-128"></a>
-<a id="__codelineno-0-129" name="__codelineno-0-129"></a>        <span class="k">return</span> <span class="n">make_core_schema</span><span class="p">(</span>
-<a id="__codelineno-0-130" name="__codelineno-0-130"></a>            <span class="n">Time</span><span class="p">,</span>
-<a id="__codelineno-0-131" name="__codelineno-0-131"></a>            <span class="n">serializer</span><span class="o">=</span><span class="n">_serialize_json</span><span class="p">,</span>
-<a id="__codelineno-0-132" name="__codelineno-0-132"></a>            <span class="n">before_validator</span><span class="o">=</span><span class="n">_validate_time</span><span class="p">,</span>
-<a id="__codelineno-0-133" name="__codelineno-0-133"></a>            <span class="n">after_validators</span><span class="o">=</span><span class="p">[</span>
-<a id="__codelineno-0-134" name="__codelineno-0-134"></a>                <span class="n">func</span>
-<a id="__codelineno-0-135" name="__codelineno-0-135"></a>                <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">fields</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_validators</span><span class="p">)</span>
-<a id="__codelineno-0-136" name="__codelineno-0-136"></a>                <span class="k">if</span> <span class="p">(</span><span class="n">func</span> <span class="o">:=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_validators</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-137" name="__codelineno-0-137"></a>            <span class="p">],</span>
-<a id="__codelineno-0-138" name="__codelineno-0-138"></a>            <span class="n">json_schema</span><span class="o">=</span><span class="n">core_schema</span><span class="o">.</span><span class="n">dict_schema</span><span class="p">(),</span>
-<a id="__codelineno-0-139" name="__codelineno-0-139"></a>        <span class="p">)</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">    encoding</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">        A custom encoding for this type</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">    Examples</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">    &gt;&gt;&gt; import typing as ty</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    &gt;&gt;&gt; import pydantic</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">    &gt;&gt;&gt; from astropy.time import Time</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    &gt;&gt;&gt; from scientific_pydantic.astropy.time import (</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    ...     TimeAdapter,</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    ... )  # doctest: +NORMALIZE_WHITESPACE</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">    &lt;BLANKLINE&gt;</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">    &gt;&gt;&gt; class Model(pydantic.BaseModel):</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">    ...     t: ty.Annotated[Time, TimeAdapter()]  # doctest: +NORMALIZE_WHITESPACE</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">    &lt;BLANKLINE&gt;</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">    &gt;&gt;&gt; Model(t=&quot;2026-03-01T19:50:00&quot;)</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">    Model(t=&lt;Time object: scale=&#39;utc&#39; format=&#39;isot&#39; value=2026-03-01T19:50:00.000&gt;)</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a>        <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a>        <span class="n">scalar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a>        <span class="n">ndim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a>        <span class="n">shape</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">types</span><span class="o">.</span><span class="n">EllipsisType</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">range</span> <span class="o">|</span> <span class="nb">slice</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-80" name="__codelineno-0-80"></a>        <span class="n">ge</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81"></a>        <span class="n">gt</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82"></a>        <span class="n">le</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83"></a>        <span class="n">lt</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a>        <span class="n">encoding</span><span class="p">:</span> <span class="n">Encoding</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-85" name="__codelineno-0-85"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-86" name="__codelineno-0-86"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">scientific_pydantic.astropy.validators</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayShapeValidator</span>
+<a id="__codelineno-0-87" name="__codelineno-0-87"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">scientific_pydantic.numpy.validators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-0-88" name="__codelineno-0-88"></a>            <span class="n">validate_all_ge</span><span class="p">,</span>
+<a id="__codelineno-0-89" name="__codelineno-0-89"></a>            <span class="n">validate_all_gt</span><span class="p">,</span>
+<a id="__codelineno-0-90" name="__codelineno-0-90"></a>            <span class="n">validate_all_le</span><span class="p">,</span>
+<a id="__codelineno-0-91" name="__codelineno-0-91"></a>            <span class="n">validate_all_lt</span><span class="p">,</span>
+<a id="__codelineno-0-92" name="__codelineno-0-92"></a>        <span class="p">)</span>
+<a id="__codelineno-0-93" name="__codelineno-0-93"></a>
+<a id="__codelineno-0-94" name="__codelineno-0-94"></a>        <span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
+<a id="__codelineno-0-95" name="__codelineno-0-95"></a>        <span class="k">class</span><span class="w"> </span><span class="nc">CtorValidators</span><span class="p">:</span>
+<a id="__codelineno-0-96" name="__codelineno-0-96"></a>            <span class="n">shape</span><span class="p">:</span> <span class="n">ArrayShapeValidator</span>
+<a id="__codelineno-0-97" name="__codelineno-0-97"></a>            <span class="n">ge</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Time</span><span class="p">],</span> <span class="n">Time</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-98" name="__codelineno-0-98"></a>            <span class="n">gt</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Time</span><span class="p">],</span> <span class="n">Time</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-99" name="__codelineno-0-99"></a>            <span class="n">le</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Time</span><span class="p">],</span> <span class="n">Time</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-100" name="__codelineno-0-100"></a>            <span class="n">lt</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Time</span><span class="p">],</span> <span class="n">Time</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-101" name="__codelineno-0-101"></a>
+<a id="__codelineno-0-102" name="__codelineno-0-102"></a>        <span class="n">validators</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ty</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-103" name="__codelineno-0-103"></a>        <span class="k">for</span> <span class="n">bound</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="p">(</span>
+<a id="__codelineno-0-104" name="__codelineno-0-104"></a>            <span class="p">(</span><span class="n">gt</span><span class="p">,</span> <span class="s2">&quot;gt&quot;</span><span class="p">,</span> <span class="n">validate_all_gt</span><span class="p">),</span>
+<a id="__codelineno-0-105" name="__codelineno-0-105"></a>            <span class="p">(</span><span class="n">ge</span><span class="p">,</span> <span class="s2">&quot;ge&quot;</span><span class="p">,</span> <span class="n">validate_all_ge</span><span class="p">),</span>
+<a id="__codelineno-0-106" name="__codelineno-0-106"></a>            <span class="p">(</span><span class="n">lt</span><span class="p">,</span> <span class="s2">&quot;lt&quot;</span><span class="p">,</span> <span class="n">validate_all_lt</span><span class="p">),</span>
+<a id="__codelineno-0-107" name="__codelineno-0-107"></a>            <span class="p">(</span><span class="n">le</span><span class="p">,</span> <span class="s2">&quot;le&quot;</span><span class="p">,</span> <span class="n">validate_all_le</span><span class="p">),</span>
+<a id="__codelineno-0-108" name="__codelineno-0-108"></a>        <span class="p">):</span>
+<a id="__codelineno-0-109" name="__codelineno-0-109"></a>            <span class="k">if</span> <span class="n">bound</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-110" name="__codelineno-0-110"></a>                <span class="k">continue</span>
+<a id="__codelineno-0-111" name="__codelineno-0-111"></a>            <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-112" name="__codelineno-0-112"></a>                <span class="n">bound_t</span> <span class="o">=</span> <span class="n">_validate_time</span><span class="p">(</span><span class="n">bound</span><span class="p">)</span>
+<a id="__codelineno-0-113" name="__codelineno-0-113"></a>            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-114" name="__codelineno-0-114"></a>                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;while validating the </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> constraint:</span><span class="se">\n</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-115" name="__codelineno-0-115"></a>                <span class="k">raise</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">PydanticSchemaGenerationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+<a id="__codelineno-0-116" name="__codelineno-0-116"></a>
+<a id="__codelineno-0-117" name="__codelineno-0-117"></a>            <span class="n">validators</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">bound_t</span><span class="p">)</span>
+<a id="__codelineno-0-118" name="__codelineno-0-118"></a>
+<a id="__codelineno-0-119" name="__codelineno-0-119"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_validators</span> <span class="o">=</span> <span class="n">CtorValidators</span><span class="p">(</span>
+<a id="__codelineno-0-120" name="__codelineno-0-120"></a>            <span class="n">shape</span><span class="o">=</span><span class="n">ArrayShapeValidator</span><span class="p">(</span><span class="n">scalar</span><span class="o">=</span><span class="n">scalar</span><span class="p">,</span> <span class="n">ndim</span><span class="o">=</span><span class="n">ndim</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">),</span>
+<a id="__codelineno-0-121" name="__codelineno-0-121"></a>            <span class="o">**</span><span class="n">validators</span><span class="p">,</span>
+<a id="__codelineno-0-122" name="__codelineno-0-122"></a>        <span class="p">)</span>
+<a id="__codelineno-0-123" name="__codelineno-0-123"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span> <span class="o">=</span> <span class="n">encoding</span> <span class="k">if</span> <span class="n">encoding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_default_encoding</span><span class="p">()</span>
+<a id="__codelineno-0-124" name="__codelineno-0-124"></a>
+<a id="__codelineno-0-125" name="__codelineno-0-125"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
+<a id="__codelineno-0-126" name="__codelineno-0-126"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-127" name="__codelineno-0-127"></a>        <span class="n">_source_type</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span>
+<a id="__codelineno-0-128" name="__codelineno-0-128"></a>        <span class="n">_handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span><span class="p">,</span>
+<a id="__codelineno-0-129" name="__codelineno-0-129"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">core_schema</span><span class="o">.</span><span class="n">CoreSchema</span><span class="p">:</span>
+<a id="__codelineno-0-130" name="__codelineno-0-130"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the pydantic schema for this type&quot;&quot;&quot;</span>
+<a id="__codelineno-0-131" name="__codelineno-0-131"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">astropy.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">Time</span>
+<a id="__codelineno-0-132" name="__codelineno-0-132"></a>
+<a id="__codelineno-0-133" name="__codelineno-0-133"></a>        <span class="k">return</span> <span class="n">make_core_schema</span><span class="p">(</span>
+<a id="__codelineno-0-134" name="__codelineno-0-134"></a>            <span class="n">Time</span><span class="p">,</span>
+<a id="__codelineno-0-135" name="__codelineno-0-135"></a>            <span class="n">encoding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span><span class="p">,</span>
+<a id="__codelineno-0-136" name="__codelineno-0-136"></a>            <span class="n">after_validators</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-0-137" name="__codelineno-0-137"></a>                <span class="n">func</span>
+<a id="__codelineno-0-138" name="__codelineno-0-138"></a>                <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">fields</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_validators</span><span class="p">)</span>
+<a id="__codelineno-0-139" name="__codelineno-0-139"></a>                <span class="k">if</span> <span class="p">(</span><span class="n">func</span> <span class="o">:=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_validators</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-140" name="__codelineno-0-140"></a>            <span class="p">],</span>
+<a id="__codelineno-0-141" name="__codelineno-0-141"></a>        <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -1469,11 +1494,7 @@ description of how this works.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/scientific_pydantic/astropy/time/time_adapter.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-121">121</a></span>
-<span class="normal"><a href="#__codelineno-0-122">122</a></span>
-<span class="normal"><a href="#__codelineno-0-123">123</a></span>
-<span class="normal"><a href="#__codelineno-0-124">124</a></span>
-<span class="normal"><a href="#__codelineno-0-125">125</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-125">125</a></span>
 <span class="normal"><a href="#__codelineno-0-126">126</a></span>
 <span class="normal"><a href="#__codelineno-0-127">127</a></span>
 <span class="normal"><a href="#__codelineno-0-128">128</a></span>
@@ -1487,25 +1508,25 @@ description of how this works.</p>
 <span class="normal"><a href="#__codelineno-0-136">136</a></span>
 <span class="normal"><a href="#__codelineno-0-137">137</a></span>
 <span class="normal"><a href="#__codelineno-0-138">138</a></span>
-<span class="normal"><a href="#__codelineno-0-139">139</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-121" name="__codelineno-0-121"></a><span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
-<a id="__codelineno-0-122" name="__codelineno-0-122"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-123" name="__codelineno-0-123"></a>    <span class="n">_source_type</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span>
-<a id="__codelineno-0-124" name="__codelineno-0-124"></a>    <span class="n">_handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span><span class="p">,</span>
-<a id="__codelineno-0-125" name="__codelineno-0-125"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">core_schema</span><span class="o">.</span><span class="n">CoreSchema</span><span class="p">:</span>
-<a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the pydantic schema for this type&quot;&quot;&quot;</span>
-<a id="__codelineno-0-127" name="__codelineno-0-127"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">astropy.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">Time</span>
-<a id="__codelineno-0-128" name="__codelineno-0-128"></a>
-<a id="__codelineno-0-129" name="__codelineno-0-129"></a>    <span class="k">return</span> <span class="n">make_core_schema</span><span class="p">(</span>
-<a id="__codelineno-0-130" name="__codelineno-0-130"></a>        <span class="n">Time</span><span class="p">,</span>
-<a id="__codelineno-0-131" name="__codelineno-0-131"></a>        <span class="n">serializer</span><span class="o">=</span><span class="n">_serialize_json</span><span class="p">,</span>
-<a id="__codelineno-0-132" name="__codelineno-0-132"></a>        <span class="n">before_validator</span><span class="o">=</span><span class="n">_validate_time</span><span class="p">,</span>
-<a id="__codelineno-0-133" name="__codelineno-0-133"></a>        <span class="n">after_validators</span><span class="o">=</span><span class="p">[</span>
-<a id="__codelineno-0-134" name="__codelineno-0-134"></a>            <span class="n">func</span>
-<a id="__codelineno-0-135" name="__codelineno-0-135"></a>            <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">fields</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_validators</span><span class="p">)</span>
-<a id="__codelineno-0-136" name="__codelineno-0-136"></a>            <span class="k">if</span> <span class="p">(</span><span class="n">func</span> <span class="o">:=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_validators</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-137" name="__codelineno-0-137"></a>        <span class="p">],</span>
-<a id="__codelineno-0-138" name="__codelineno-0-138"></a>        <span class="n">json_schema</span><span class="o">=</span><span class="n">core_schema</span><span class="o">.</span><span class="n">dict_schema</span><span class="p">(),</span>
-<a id="__codelineno-0-139" name="__codelineno-0-139"></a>    <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-139">139</a></span>
+<span class="normal"><a href="#__codelineno-0-140">140</a></span>
+<span class="normal"><a href="#__codelineno-0-141">141</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-125" name="__codelineno-0-125"></a><span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
+<a id="__codelineno-0-126" name="__codelineno-0-126"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-127" name="__codelineno-0-127"></a>    <span class="n">_source_type</span><span class="p">:</span> <span class="n">ty</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span>
+<a id="__codelineno-0-128" name="__codelineno-0-128"></a>    <span class="n">_handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span><span class="p">,</span>
+<a id="__codelineno-0-129" name="__codelineno-0-129"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">core_schema</span><span class="o">.</span><span class="n">CoreSchema</span><span class="p">:</span>
+<a id="__codelineno-0-130" name="__codelineno-0-130"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the pydantic schema for this type&quot;&quot;&quot;</span>
+<a id="__codelineno-0-131" name="__codelineno-0-131"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">astropy.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">Time</span>
+<a id="__codelineno-0-132" name="__codelineno-0-132"></a>
+<a id="__codelineno-0-133" name="__codelineno-0-133"></a>    <span class="k">return</span> <span class="n">make_core_schema</span><span class="p">(</span>
+<a id="__codelineno-0-134" name="__codelineno-0-134"></a>        <span class="n">Time</span><span class="p">,</span>
+<a id="__codelineno-0-135" name="__codelineno-0-135"></a>        <span class="n">encoding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span><span class="p">,</span>
+<a id="__codelineno-0-136" name="__codelineno-0-136"></a>        <span class="n">after_validators</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-0-137" name="__codelineno-0-137"></a>            <span class="n">func</span>
+<a id="__codelineno-0-138" name="__codelineno-0-138"></a>            <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">fields</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_validators</span><span class="p">)</span>
+<a id="__codelineno-0-139" name="__codelineno-0-139"></a>            <span class="k">if</span> <span class="p">(</span><span class="n">func</span> <span class="o">:=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_validators</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-140" name="__codelineno-0-140"></a>        <span class="p">],</span>
+<a id="__codelineno-0-141" name="__codelineno-0-141"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
