@@ -1,0 +1,45 @@
+name: New Adapter Request
+description: Request support for adapting a new external type
+title: "[New Adapter]: "
+labels:
+  - enhancement
+  - adapter
+body:
+  - type: input
+    id: type_to_adapt
+    attributes:
+      label: Type to Adapt
+      description: Fully qualified type name (module + class)
+      placeholder: e.g., astropy.units.Quantity
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation_params
+    attributes:
+      label: Proposed Validation Parameters
+      description: |
+        Describe any constraints, options, or configuration that validation
+        should support (e.g., units, bounds, dimensionality, shape).
+      placeholder: |
+        - unit: must be convertible to meters
+        - allow_nan: false
+        - shape: (N,)
+    validations:
+      required: true
+
+  - type: textarea
+    id: serialization_format
+    attributes:
+      label: Proposed Default Serialization Format
+      description: |
+        How should instances of this type be serialized by default?
+        Provide example JSON.
+      placeholder: |
+        JSON example:
+        {
+          "value": 3.5,
+          "unit": "m"
+        }
+    validations:
+      required: true
