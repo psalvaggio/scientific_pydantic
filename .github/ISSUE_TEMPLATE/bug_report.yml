@@ -14,6 +14,15 @@ body:
       required: true
 
   - type: input
+    id: python_version
+    attributes:
+      label: Python Version
+      description: Version of Python you are using
+      placeholder: e.g., 3.14
+    validations:
+      required: true
+
+  - type: input
     id: pydantic_version
     attributes:
       label: Pydantic Version
@@ -42,9 +51,9 @@ body:
       label: Description
       description: |
         Clearly describe the bug, including:
-        • What you expected to happen
-        • What actually happened
-        • Any error messages or stack traces
+        - What you expected to happen
+        - What actually happened
+        - Any error messages or stack traces
       placeholder: |
         Expected:
         ...

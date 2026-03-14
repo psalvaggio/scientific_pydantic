@@ -43,3 +43,17 @@ body:
         }
     validations:
       required: true
+
+  - type: textarea
+    id: usage_example
+    attributes:
+      label: Intended Usage Example
+      description: Show how you'd expect to annotate a field with this type.
+      render: python
+      placeholder: |
+        from scientific_pydantic import ...
+
+        class MyModel(BaseModel):
+            distance: Annotated[Quantity, QuantityValidator("m")]
+    validations:
+      required: false
