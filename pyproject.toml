@@ -7,6 +7,24 @@ license = "MIT"
 authors = [
     { name = "Philip Salvaggio", email = "salvaggio.philip@gmail.com" }
 ]
+keywords = [
+    "pydantic",
+    "validation",
+    "serialization",
+    "numpy",
+    "scipy",
+    "shapely",
+    "astropy",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Pydantic :: 2",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.12.5",
