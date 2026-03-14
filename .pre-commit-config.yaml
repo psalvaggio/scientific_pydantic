@@ -28,7 +28,7 @@ repos:
   # Ruff: linting and formatting
   # ---------------------------------------
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.2
+    rev: v0.15.6
     hooks:
       # Linting
       - id: ruff-check
@@ -42,7 +42,7 @@ repos:
         types_or: [python, pyi]
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.7.20
+    rev: 0.10.10
     hooks:
       - id: uv-lock
 

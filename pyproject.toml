@@ -1,6 +1,6 @@
 [project]
 name = "scientific_pydantic"
-version = "0.1.1"
+version = "0.2.0"
 description = "Pydantic adapters for common scientific types"
 readme = "README.md"
 license = "MIT"
@@ -27,7 +27,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "pydantic>=2.12.5",
+    "pydantic>=2",
 ]
 
 [build-system]
