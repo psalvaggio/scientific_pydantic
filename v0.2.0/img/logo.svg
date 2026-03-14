@@ -1,0 +1,56 @@
+<svg width="100%" viewBox="0 0 680 680" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hexGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5020C0"/>
+      <stop offset="45%" stop-color="#3535CC"/>
+      <stop offset="100%" stop-color="#1AABE8"/>
+    </linearGradient>
+    <linearGradient id="cubeTop" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#f0f2ff"/>
+      <stop offset="100%" stop-color="#c8ccf0"/>
+    </linearGradient>
+    <linearGradient id="cubeLeft" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#c8ccf0"/>
+      <stop offset="100%" stop-color="#f0f2ff"/>
+    </linearGradient>
+    <linearGradient id="cubeRight" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#c8ccf4"/>
+      <stop offset="100%" stop-color="#d8dcf8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Hexagon -->
+  <polygon points="340,58 582,194 582,486 340,622 98,486 98,194" fill="url(#hexGrad)" stroke="#110860" stroke-width="10" stroke-linejoin="round" />
+  <polygon points="340,78 562,206 562,466 340,602 118,466 118,206" fill="none" stroke="#7755ff" stroke-width="2.5" stroke-linejoin="round" opacity="0.45" />
+
+  <!-- Ring 1: rotated -30deg, rx=195, ry=68 -->
+  <!-- Nodes: t=0 => (509,242), t=180 => (171,438) -->
+  <ellipse cx="340" cy="340" rx="195" ry="68" fill="none" stroke="#0a0820" stroke-width="8" transform="rotate(-30,340,340)" />
+
+  <!-- Ring 2: rotated +30deg, rx=195, ry=68 -->
+  <!-- Nodes: t=0 => (509,438), t=180 => (171,242) -->
+  <ellipse cx="340" cy="340" rx="195" ry="68" fill="none" stroke="#0a0820" stroke-width="8" transform="rotate(30,340,340)" />
+
+  <!-- Orbital nodes -->
+  <circle cx="171" cy="243" r="16" fill="white" />
+  <circle cx="509" cy="242" r="16" fill="white" />
+  <circle cx="509" cy="438" r="16" fill="white" />
+
+  <!-- TOP FACE - 4 quads -->
+  <polygon points="340,280 366,295 340,310 314,295" fill="url(#cubeTop)" stroke="#7880cc" stroke-width="1.2" />
+  <polygon points="366,295 392,310 366,325 340,310" fill="url(#cubeTop)" stroke="#7880cc" stroke-width="1.2" />
+  <polygon points="314,295 340,310 314,325 288,310" fill="url(#cubeTop)" stroke="#7880cc" stroke-width="1.2" />
+  <polygon points="340,310 366,325 340,340 314,325" fill="url(#cubeTop)" stroke="#7880cc" stroke-width="1.2" />
+
+  <!-- LEFT FACE - 4 quads (darker) -->
+  <polygon points="392,310 366,325 366,355 392,340" fill="url(#cubeLeft)" stroke="#6068b8" stroke-width="1.2" />
+  <polygon points="366,325 340,340 340,370 366,355" fill="url(#cubeLeft)" stroke="#6068b8" stroke-width="1.2" />
+  <polygon points="340,370 366,355 366,385 340,400" fill="url(#cubeLeft)" stroke="#6068b8" stroke-width="1.2" />
+  <polygon points="392,340 366,355 366,385 392,370" fill="url(#cubeLeft)" stroke="#6068b8" stroke-width="1.2" />
+
+  <!-- RIGHT FACE - 4 quads (medium) -->
+  <polygon points="288,310 314,325 314,355 288,340" fill="url(#cubeRight)" stroke="#8890d8" stroke-width="1.2" />
+  <polygon points="314,325 340,340 340,370 314,355" fill="url(#cubeRight)" stroke="#8890d8" stroke-width="1.2" />
+  <polygon points="288,340 288,370 314,385 314,355" fill="url(#cubeRight)" stroke="#8890d8" stroke-width="1.2" />
+  <polygon points="314,355 340,370 340,400 314,385" fill="url(#cubeRight)" stroke="#8890d8" stroke-width="1.2" />
+</svg>
