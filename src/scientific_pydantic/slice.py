@@ -110,20 +110,19 @@ class SliceAdapter:
         """Get the pydantic schema for this type"""
 
         def _validate(value: slice) -> slice:
-            x: list[ty.Any] = []
             try:
-                for adapter, val, field in (  # noqa: B007
-                    (self._start_adapter, value.start, "start"),
-                    (self._stop_adapter, value.stop, "stop"),
-                    (self._step_adapter, value.step, "step"),
-                ):
-                    x.append(adapter.validate_python(val))
+                start = self._start_adapter.validate_python(value.start)
             except pydantic.ValidationError as e:
-                raise _prefix_validation_error(
-                    e,
-                    field,  # type: ignore[unbound-name]
-                ) from None
-            return slice(*x)
+                raise _prefix_validation_error(e, "start") from None
+            try:
+                stop = self._stop_adapter.validate_python(value.stop)
+            except pydantic.ValidationError as e:
+                raise _prefix_validation_error(e, "stop") from None
+            try:
+                step = self._step_adapter.validate_python(value.step)
+            except pydantic.ValidationError as e:
+                raise _prefix_validation_error(e, "step") from None
+            return slice(start, stop, step)
 
         def _serialize(value: slice) -> str | dict[str, ty.Any]:
             if all(
@@ -207,10 +206,10 @@ def _from_str(value: str) -> tuple[ty.Any, ty.Any, ty.Any]:
             require_start=False,
             require_stop=True,
         )
-    except SliceSyntaxError as exc:
+    except SliceSyntaxError as e:
         err_t = "slice_syntax_error"
         msg = "{what}"
-        raise PydanticCustomError(err_t, msg, {"what": str(exc)}) from None
+        raise PydanticCustomError(err_t, msg, {"what": str(e)}) from e
 
     return (start, stop, step)
 
@@ -253,6 +252,8 @@ def _prefix_validation_error(
         msg = error["msg"]
         details.append(
             InitErrorDetails(
+                # The message is rendered at this point, so these aren't literal
+                # string anymore. It works at runtime.
                 type=PydanticCustomError(err_t, msg),  # type: ignore[bad-argument-type]
                 loc=(field, *error["loc"]),
                 input=error["input"],
