@@ -54,4 +54,16 @@ def _normalize(
         if isinstance(version, str)
         else tuple(version)
     )
-    return module_ver, version
+    return (
+        _right_pad_tuple_with_zeros(module_ver, len(version)),
+        _right_pad_tuple_with_zeros(version, len(module_ver)),
+    )
+
+
+def _right_pad_tuple_with_zeros(original_tuple: tuple, target_length: int) -> tuple:
+    """Right pads a tuple with zeros to reach a specified target length"""
+    current_length = len(original_tuple)
+    if current_length >= target_length:
+        return original_tuple
+
+    return original_tuple + (0,) * (target_length - current_length)
