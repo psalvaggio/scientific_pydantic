@@ -79,14 +79,15 @@ class GeometryConstraints(pydantic.BaseModel):
 
         Raises
         ------
-        ValueError
+        PydanticCustomError
             If the geometry violated one of the user-provided constraints.
         """
         import shapely
 
         if not isinstance(geom, shapely.geometry.base.BaseGeometry):
-            msg = f"the given object ({type(geom).__name__}) was not a shapely geometry"
-            raise ValueError(msg)  # noqa: TRY004 (pydantic wants ValueError)
+            err_t = "invalid_geometry"
+            msg = "the given object ({t}) was not a shapely geometry"
+            raise PydanticCustomError(err_t, msg, {"t": type(geom).__name__})
 
         has_z = getattr(geom, "has_z", False)
         if self.dimensionality == 2 and has_z:  # noqa: PLR2004

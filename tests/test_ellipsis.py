@@ -32,7 +32,7 @@ def test_ellipsis_literal_invalid() -> None:
     """Test invalid usage of the EllipsisLiteral"""
     with pytest.raises(
         pydantic.ValidationError,
-        match=r"Expected Ellipsis \(\.\.\.\), got 5",
+        match=r"Input should be \.\.\.",
     ):
         Model(e=5)
 

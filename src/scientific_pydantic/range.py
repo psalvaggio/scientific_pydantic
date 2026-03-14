@@ -80,8 +80,10 @@ def _validate(value: ty.Any) -> range:
                 require_start=False,
                 require_stop=True,
             )
-        except SliceSyntaxError as exc:
-            raise ValueError(str(exc)) from exc
+        except SliceSyntaxError as e:
+            err_t = "range_syntax_error"
+            msg = "{what}"
+            raise PydanticCustomError(err_t, msg, {"what": str(e)}) from e
 
         return range(
             start if start is not None else 0,

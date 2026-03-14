@@ -75,8 +75,11 @@ def parse_slice_syntax(
     (start, stop, step)
     """
     parts = value.split(":")
-    if not 2 <= len(parts) <= 3:  # noqa: PLR2004
-        msg = "Invalid slice syntax"
+    n_parts = len(parts)
+    if not 2 <= n_parts <= 3:  # noqa: PLR2004
+        msg = (
+            f"invalid slice syntax, expected 2-3 parts separated by :'s, got {n_parts}"
+        )
         raise SliceSyntaxError(msg)
 
     def _parse(part: str) -> T | None:
@@ -90,17 +93,17 @@ def parse_slice_syntax(
         stop = _parse(parts[1])
         step = _parse(parts[2]) if len(parts) == 3 else None  # noqa: PLR2004
     except (ValueError, TypeError) as exc:
-        msg = "Invalid integer in slice string"
+        msg = "invalid integer in slice string"
         raise SliceSyntaxError(msg) from exc
 
     if require_start and start is None:
-        msg = "Start is required"
+        msg = "start is required"
         raise SliceSyntaxError(msg)
     if require_stop and stop is None:
-        msg = "Stop is required"
+        msg = "stop is required"
         raise SliceSyntaxError(msg)
     if step == 0:
-        msg = "Step must not be zero"
+        msg = "step must not be zero"
         raise SliceSyntaxError(msg)
 
     return start, stop, step

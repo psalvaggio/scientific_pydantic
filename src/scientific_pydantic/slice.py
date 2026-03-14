@@ -5,7 +5,7 @@ import typing as ty
 from collections.abc import Hashable, Mapping, Sequence
 
 import pydantic
-from pydantic_core import core_schema
+from pydantic_core import InitErrorDetails, PydanticCustomError, core_schema
 
 from .schema import Encoding, make_core_schema
 from .slice_syntax import (
@@ -110,9 +110,18 @@ class SliceAdapter:
         """Get the pydantic schema for this type"""
 
         def _validate(value: slice) -> slice:
-            start = self._start_adapter.validate_python(value.start)
-            stop = self._stop_adapter.validate_python(value.stop)
-            step = self._step_adapter.validate_python(value.step)
+            try:
+                start = self._start_adapter.validate_python(value.start)
+            except pydantic.ValidationError as e:
+                raise _prefix_validation_error(e, "start") from None
+            try:
+                stop = self._stop_adapter.validate_python(value.stop)
+            except pydantic.ValidationError as e:
+                raise _prefix_validation_error(e, "stop") from None
+            try:
+                step = self._step_adapter.validate_python(value.step)
+            except pydantic.ValidationError as e:
+                raise _prefix_validation_error(e, "step") from None
             return slice(start, stop, step)
 
         def _serialize(value: slice) -> str | dict[str, ty.Any]:
@@ -181,9 +190,11 @@ class SliceAdapter:
 
 
 def _from_mapping(value: Mapping[str, ty.Any]) -> tuple[ty.Any, ty.Any, ty.Any]:
-    if any(x not in ("start", "stop", "step") for x in value):
-        msg = 'Invalid key for slice, can only accept "start"/"stop"/"step"'
-        raise ValueError(msg)
+    for key in value:
+        if key not in ("start", "stop", "step"):
+            err_t = "slice_invalid_key"
+            msg = 'invalid key "{key}" for slice, can only accept "start"/"stop"/"step"'
+            raise PydanticCustomError(err_t, msg, {"key": key})
     return (value.get("start"), value.get("stop"), value.get("step"))
 
 
@@ -195,17 +206,21 @@ def _from_str(value: str) -> tuple[ty.Any, ty.Any, ty.Any]:
             require_start=False,
             require_stop=True,
         )
-    except SliceSyntaxError as exc:
-        raise ValueError(str(exc)) from exc
+    except SliceSyntaxError as e:
+        err_t = "slice_syntax_error"
+        msg = "{what}"
+        raise PydanticCustomError(err_t, msg, {"what": str(e)}) from e
 
     return (start, stop, step)
 
 
 def _from_sequence(value: Sequence[ty.Any]) -> tuple[ty.Any, ty.Any, ty.Any]:
-    if 1 <= len(value) <= 3:  # noqa: PLR2004
+    size = len(value)
+    if 1 <= size <= 3:  # noqa: PLR2004
         return tuple(value)
-    msg = "A sequence input to slice must have 1-3 elements"
-    raise ValueError(msg)
+    err_t = "slice_length_error"
+    msg = "a sequence input to slice must have 1-3 elements, was {size}"
+    raise PydanticCustomError(err_t, msg, {"size": size})
 
 
 def _validate_slice(value: ty.Any) -> slice:
@@ -219,10 +234,35 @@ def _validate_slice(value: ty.Any) -> slice:
         case Sequence():
             start, stop, step = _from_sequence(value)
         case _:
-            msg = "Expected a slice, sequence, mapping or str"
-            raise ValueError(msg)
+            err_t = "slice_type_error"
+            msg = "expected a slice, sequence, mapping or str, got {t}"
+            raise PydanticCustomError(err_t, msg, {"t": type(value).__name__})
 
     return slice(start, stop, step)
+
+
+def _prefix_validation_error(
+    exc: pydantic.ValidationError,
+    field: str,
+) -> pydantic.ValidationError:
+    """Rebuild a ValidationError with `field` prepended to every error path."""
+    details: list[InitErrorDetails] = []
+    for error in exc.errors(include_url=False):
+        err_t = error["type"]
+        msg = error["msg"]
+        details.append(
+            InitErrorDetails(
+                # The message is rendered at this point, so these aren't literal
+                # string anymore. It works at runtime.
+                type=PydanticCustomError(err_t, msg),  # type: ignore[bad-argument-type]
+                loc=(field, *error["loc"]),
+                input=error["input"],
+            )
+        )
+    return pydantic.ValidationError.from_exception_data(
+        title=exc.title,
+        line_errors=details,
+    )
 
 
 IntSliceAdapter = SliceAdapter(int | None)

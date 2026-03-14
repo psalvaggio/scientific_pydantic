@@ -4,7 +4,7 @@ import types
 import typing as ty
 
 import pydantic
-from pydantic_core import core_schema
+from pydantic_core import PydanticKnownError, core_schema
 
 from .schema import Encoding, make_core_schema
 
@@ -66,8 +66,9 @@ class EllipsisAdapter:
 def _validate(value: ty.Any) -> types.EllipsisType:
     if value is ... or value == "...":
         return ...
-    msg = f"Expected Ellipsis (...), got {value!r}"
-    raise ValueError(msg)
+
+    err_t = "literal_error"
+    raise PydanticKnownError(err_t, {"expected": "..."})
 
 
 EllipsisLiteral = ty.Annotated[types.EllipsisType, EllipsisAdapter()]
