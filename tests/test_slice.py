@@ -37,19 +37,22 @@ def test_int_slice_validation(value: ty.Any, expected: range) -> None:
 
 
 @pytest.mark.parametrize(
-    "value",
+    ("value", "match"),
     [
-        pytest.param(123, id="int"),
-        pytest.param("5", id="5"),
-        pytest.param("random text", id="random text"),
-        pytest.param("random:text:with colons", id="non-ints"),
-        pytest.param("1:2:3:4", id="1:2:3:4"),
-        pytest.param(slice("a", "b"), id="str-slice'"),
+        pytest.param(123, "slice_type_error", id="int"),
+        pytest.param("5", "slice_syntax_error", id="5"),
+        pytest.param("random text", "slice_syntax_error", id="random text"),
+        pytest.param(
+            "random:text:with colons", r"(?s)\.start.*int_parsing", id="non-ints"
+        ),
+        pytest.param("1:2:3:4", "(?s)got 4.*slice_syntax_error", id="1:2:3:4"),
+        pytest.param(slice("a", "b"), "int_parsing", id="str-slice"),
+        pytest.param(slice(1, 2, "c"), r"(?s)\.step.*int_parsing", id="str-slice-step"),
     ],
 )
-def test_int_slice_validation_errors(value: ty.Any) -> None:
+def test_int_slice_validation_errors(value: ty.Any, match: str) -> None:
     """Invalid inputs raise ValidationError."""
-    with pytest.raises(pydantic.ValidationError):
+    with pytest.raises(pydantic.ValidationError, match=match):
         IntModel(s=value)
 
 
