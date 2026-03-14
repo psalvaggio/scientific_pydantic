@@ -1,0 +1,83 @@
+name: Bug Report
+description: Report a reproducible bug in scientific_pydantic
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: input
+    id: library_version
+    attributes:
+      label: Library Version
+      description: Version of scientific_pydantic you are using
+      placeholder: e.g., 0.3.1
+    validations:
+      required: true
+
+  - type: input
+    id: python_version
+    attributes:
+      label: Python Version
+      description: Version of Python you are using
+      placeholder: e.g., 3.14
+    validations:
+      required: true
+
+  - type: input
+    id: pydantic_version
+    attributes:
+      label: Pydantic Version
+      description: Version of Pydantic installed in your environment
+      placeholder: e.g., 2.7.3
+    validations:
+      required: true
+
+  - type: textarea
+    id: integrations
+    attributes:
+      label: Integration Libraries + Versions
+      description: |
+        List any relevant third-party libraries involved (e.g., numpy, scipy, shapely, astropy).
+        Include versions if possible.
+      placeholder: |
+        numpy==1.26.4
+        scipy==1.12.0
+        astropy==6.0.1
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: |
+        Clearly describe the bug, including:
+        - What you expected to happen
+        - What actually happened
+        - Any error messages or stack traces
+      placeholder: |
+        Expected:
+        ...
+
+        Actual:
+        ...
+
+        Traceback:
+        ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: Minimal Reproducer
+      description: |
+        Provide the smallest self-contained code example that reproduces the issue.
+        Avoid external dependencies when possible.
+      render: python
+      placeholder: |
+        import pydantic
+        import scientific_pydantic as sp
+
+        # minimal example here
+    validations:
+      required: true

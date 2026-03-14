@@ -1,0 +1,32 @@
+name: Feature Request
+description: Suggest a new capability or enhancement
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: |
+        Clearly describe the feature and the problem it solves.
+        Include context, motivation, and any relevant prior art.
+      placeholder: |
+        I would like scientific_pydantic to support...
+    validations:
+      required: true
+
+  - type: textarea
+    id: usage_examples
+    attributes:
+      label: Proposed Usage Example(s)
+      description: |
+        Show how the feature would be used in practice.
+        Code examples are strongly preferred.
+      render: python
+      placeholder: |
+        from scientific_pydantic import ...
+
+        # Example usage here
+    validations:
+      required: true
