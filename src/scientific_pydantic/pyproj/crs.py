@@ -25,7 +25,8 @@ class CRSAdapter:
 
     JSON Serialization
     ------------------
-    The WKT representation of the CRS is used `.to_wkt()`.
+    An EPSG authority string if pyproj is 100% confident. Otherwise, the WKT
+    representation of the CRS is used via `.to_wkt()`.
 
     Parameters
     ----------
@@ -92,7 +93,7 @@ class CRSAdapter:
             CRS,
             encoding=self._encoding
             or Encoding(
-                serializer=lambda crs: crs.to_wkt(),
+                serializer=_serialize,
                 before_validator=_validate,
                 json_schema=core_schema.any_schema(
                     metadata={
@@ -116,3 +117,10 @@ def _validate(val: ty.Any) -> CRS:
         err_t = "crs_error"
         msg = "{e}"
         raise PydanticCustomError(err_t, msg, {"e": str(exc)}) from exc
+
+
+def _serialize(val: CRS) -> str:
+    epsg = val.to_epsg(100)
+    if epsg is not None:
+        return f"EPSG:{epsg}"
+    return val.to_wkt()

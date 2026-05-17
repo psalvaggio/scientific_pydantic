@@ -95,22 +95,21 @@ def test_invalid_input(data: ty.Any, match: str) -> None:
 @pytest.mark.parametrize(
     ("data", "expected"),
     [
+        pytest.param(4326, "EPSG:4326", id="epsg-4326"),
         pytest.param(
-            4919,
+            "+proj=longlat +datum=WGS84 +no_defs",
             (
-                'GEODCRS["ITRF2000",DYNAMIC[FRAMEEPOCH[1997]],'
-                'DATUM["International Terrestrial Reference Frame 2000",'
-                'ELLIPSOID["GRS 1980",6378137,298.257222101,'
-                'LENGTHUNIT["metre",1]]],'
-                'PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],'
-                'CS[Cartesian,3],AXIS["(X)",geocentricX,ORDER[1],'
-                'LENGTHUNIT["metre",1]],AXIS["(Y)",geocentricY,ORDER[2],'
-                'LENGTHUNIT["metre",1]],AXIS["(Z)",geocentricZ,ORDER[3],'
-                'LENGTHUNIT["metre",1]],USAGE[SCOPE["Geodesy."],AREA["World."],'
-                "BBOX[-90,-180,90,180]],"
-                'ID["EPSG",4919]]'
+                'GEOGCRS["unknown",DATUM["World Geodetic System 1984",'
+                'ELLIPSOID["WGS 84",6378137,298.257223563,'
+                'LENGTHUNIT["metre",1]],ID["EPSG",6326]],'
+                'PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433],'
+                'ID["EPSG",8901]],CS[ellipsoidal,2],'
+                'AXIS["longitude",east,ORDER[1],'
+                'ANGLEUNIT["degree",0.0174532925199433,ID["EPSG",9122]]],'
+                'AXIS["latitude",north,ORDER[2],'
+                'ANGLEUNIT["degree",0.0174532925199433,ID["EPSG",9122]]]]'
             ),
-            id="4919",
+            id="proj-str-wkt",
         ),
     ],
 )
