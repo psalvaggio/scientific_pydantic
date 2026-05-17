@@ -365,7 +365,7 @@ def test_custom_encoding() -> None:
     def validate(val: ty.Any) -> Time:
         if isinstance(val, Time):
             return val
-        return ty.cast("Time", Time.strptime(val, fmt))
+        return Time.strptime(val, fmt)
 
     encoding = Encoding(
         serializer=serialize,

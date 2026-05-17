@@ -256,7 +256,7 @@ def _serialize(
 ) -> ty.Any:
     """Serialize a Quantity"""
     if serialize_as_unit is not None:
-        q = q.to(serialize_as_unit)
+        q = ty.cast("u.Quantity", q.to(serialize_as_unit))
 
     if info.mode == "python":
         return q
