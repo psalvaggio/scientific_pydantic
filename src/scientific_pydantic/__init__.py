@@ -16,7 +16,7 @@ path as the type they are adapting. For instance, the adapter
 
 from importlib.metadata import PackageNotFoundError, version
 
-from . import astropy, numpy, scipy, shapely
+from . import astropy, numpy, pyproj, scipy, shapely
 from .ellipsis import EllipsisAdapter, EllipsisLiteral
 from .range import RangeAdapter
 from .schema import Encoding
@@ -31,11 +31,12 @@ __all__ = [
     "SliceAdapter",
     "astropy",
     "numpy",
+    "pyproj",
     "scipy",
     "shapely",
 ]
 
 try:
-    __version__ = version("your-package-name")
+    __version__ = version("scientific_pydantic")
 except PackageNotFoundError:
     __version__ = "unknown"

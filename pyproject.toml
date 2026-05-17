@@ -45,6 +45,7 @@ dev = [
     "mkdocstrings[python]>=1.0.3",
     "numpy>=2.2.6",
     "prek>=0.2.25",
+    "pyproj>=3.7.1",
     "pyrefly>=0.46.3",
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
