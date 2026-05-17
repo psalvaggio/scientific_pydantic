@@ -185,7 +185,7 @@ class NDArrayAdapter:
             json_schema["items"] = {"type": "number"}
         elif ndim is not None and ndim > 1:
             # Nested arrays
-            items_schema = {"type": "number"}
+            items_schema: dict[str, ty.Any] = {"type": "number"}
             for _ in range(ndim - 1):
                 items_schema = {"type": "array", "items": items_schema}
             json_schema["items"] = items_schema
