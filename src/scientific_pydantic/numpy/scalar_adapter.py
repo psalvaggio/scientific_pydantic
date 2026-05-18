@@ -25,8 +25,8 @@ class ScalarAdapter:
     ------------------
     1. Matching numpy scalar type - identity pass-through.
     2. Any other numpy scalar - cast via the target type's constructor.
-    3. Python ``int``, ``float``, ``bool``, ``str`` - converted via the
-       target type's constructor.
+    3. Python ``int``, ``float``, ``bool``, ``str``, ``complex`` - converted via
+       the target type's constructor.
 
     JSON Serialization
     ------------------
@@ -99,37 +99,25 @@ class ScalarAdapter:
             msg = f"Source type {source_type} was not a supported NumPy scalar type"
             raise PydanticSchemaGenerationError(msg)
 
-        kind: str = np.dtype(source_type).kind
-
-        before_validator = _build_before_validator(source_type)
         bounds_validator = _build_bounds_validator(
             source_type, gt=self._gt, ge=self._ge, lt=self._lt, le=self._le
-        )
-        after_validators: list[ty.Callable[[ty.Any], ty.Any]] = (
-            [bounds_validator] if bounds_validator is not None else []
-        )
-
-        # Insert the custom description
-        desc = self._get_json_description(source_type)
-        json_schema = _np_json_schema(kind)
-        json_schema["metadata"] = {
-            "pydantic_js_functions": [lambda c, h: h(c) | {"description": desc}]
-        }
-
-        encoding = (
-            self._encoding
-            if self._encoding is not None
-            else Encoding(
-                serializer=_serializer,
-                before_validator=before_validator,
-                json_schema=json_schema,
-            )
         )
 
         return make_core_schema(
             source_type,
-            encoding=encoding,
-            after_validators=after_validators,
+            encoding=(
+                self._encoding
+                if self._encoding is not None
+                else Encoding(
+                    serializer=_serializer,
+                    before_validator=_build_before_validator(source_type),
+                    json_schema=_np_json_schema(
+                        np.dtype(source_type).kind,
+                        description=self._get_json_description(source_type),
+                    ),
+                )
+            ),
+            after_validators=[bounds_validator] if bounds_validator is not None else [],
         )
 
     def _get_json_description(self, source_type: type[np.generic]) -> str:
@@ -153,23 +141,30 @@ class ScalarAdapter:
 _NUMERIC_KINDS: frozenset[str] = frozenset("uifc")  # uint, int, float, complex
 
 
-def _np_json_schema(kind: str) -> CoreSchema:
+def _np_json_schema(kind: str, *, description: str) -> CoreSchema:
     """Return the pydantic-core JSON input schema for a numpy scalar kind.
 
     Parameters
     ----------
     kind
         The single-character numpy dtype kind string (e.g. ``'f'``, ``'i'``).
+    description
+        Description to add to the JSON schema
 
     Returns
     -------
     CoreSchema
         A ``pydantic_core`` schema for the expected JSON payload.
     """
+    metadata = {
+        "pydantic_js_functions": [lambda c, h: h(c) | {"description": description}]
+    }
+
     if kind == "b":
         # np.bool_ - accept JSON bool or 0/1
         return core_schema.union_schema(
-            [core_schema.bool_schema(), core_schema.int_schema(ge=0, le=1)]
+            [core_schema.bool_schema(), core_schema.int_schema(ge=0, le=1)],
+            metadata=metadata,
         )
     if kind in _NUMERIC_KINDS:
         return core_schema.union_schema(
@@ -177,10 +172,11 @@ def _np_json_schema(kind: str) -> CoreSchema:
                 core_schema.float_schema(),
                 core_schema.int_schema(),
                 core_schema.str_schema(),
-            ]
+            ],
+            metadata=metadata,
         )
     # Fallback - accept any JSON value and let numpy decide
-    return core_schema.any_schema()
+    return core_schema.any_schema(metadata=metadata)
 
 
 def _build_before_validator(
@@ -198,10 +194,9 @@ def _build_before_validator(
     Callable[[Any], Any]
         A function that returns a validated numpy scalar.
     """
+    import numpy as np
 
     def _validate(value: ty.Any) -> ty.Any:
-        import numpy as np
-
         if isinstance(value, scalar_type):
             return value
         if isinstance(value, np.generic):
