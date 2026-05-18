@@ -4,6 +4,8 @@ The current supported types are:
 
 - `dtype` - [DTypeAdapter][scientific_pydantic.numpy.DTypeAdapter]
 - `ndarray` - [NDArrayAdapter][scientific_pydantic.numpy.NDArrayAdapter]
+- `bool_`, `integer`, `inexact` -
+      [ScalarAdapter][scientific_pydantic.numpy.ScalarAdapter]
 """
 
 from .dtype_adapter import DTypeAdapter
