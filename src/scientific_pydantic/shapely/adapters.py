@@ -165,12 +165,12 @@ class GeometryConstraints(pydantic.BaseModel):
             if self.is_valid:
                 err_t = "invalid_geometry"
                 msg = "Expected the geometry to be valid, but it was not: {reason}"
-                raise PydanticCustomError(
-                    err_t, msg, {"reason": shapely.is_valid_reason(geom)}
-                )
-            err_t = "valid_geometry"
-            msg = "Expected the geometry to be invalid, but it was valid"
-            raise PydanticCustomError(err_t, msg)
+                args = {"reason": shapely.is_valid_reason(geom)}
+            else:
+                err_t = "valid_geometry"
+                msg = "Expected the geometry to be invalid, but it was valid"
+                args = {}
+            raise PydanticCustomError(err_t, msg, args)
 
     def _check_empty(self, geom: BaseGeometry) -> None:
         """Validate the geometry w.r.t. self.is_empty"""

@@ -267,7 +267,7 @@ def test_valid_models(data: dict[str, ty.Any]) -> None:
         ),
         pytest.param(
             {"invalid_polygon": shapely.Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])},
-            "=valid_geometry",
+            "=valid_geometry",  # leading = to avoid match with invalid_geometry
             id="invalid_polygon-valid",
         ),
         pytest.param(
