@@ -253,7 +253,7 @@ class GeometryAdapter:
 
     CoordinateBounds: ty.ClassVar[type] = CoordinateBounds
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
         dimensionality: ty.Literal[2, 3] | None = None,
