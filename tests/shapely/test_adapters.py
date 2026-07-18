@@ -128,6 +128,16 @@ class GeometryModel(pydantic.BaseModel, frozen=True, extra="forbid"):
     ) = None
 
     any_polygon: ty.Annotated[shapely.Polygon, GeometryAdapter()] | None = None
+    valid_polygon: (
+        ty.Annotated[shapely.Polygon, GeometryAdapter(is_valid=True)] | None
+    ) = None
+    invalid_polygon: (
+        ty.Annotated[shapely.Polygon, GeometryAdapter(is_valid=False)] | None
+    ) = None
+    empty_pt: ty.Annotated[shapely.Point, GeometryAdapter(is_empty=True)] | None = None
+    non_empty_pt: (
+        ty.Annotated[shapely.Point, GeometryAdapter(is_empty=False)] | None
+    ) = None
 
 
 @pytest.mark.parametrize(
@@ -169,6 +179,16 @@ class GeometryModel(pydantic.BaseModel, frozen=True, extra="forbid"):
             },
             id="any_polygon-with_holes",
         ),
+        pytest.param(
+            {"valid_polygon": shapely.Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])},
+            id="valid_polygon",
+        ),
+        pytest.param(
+            {"invalid_polygon": shapely.Polygon([(0, 0), (0, 1), (1, 0), (1, 1)])},
+            id="invalid_polygon",
+        ),
+        pytest.param({"empty_pt": shapely.Point()}, id="empty_pt"),
+        pytest.param({"non_empty_pt": shapely.Point((0, 0))}, id="non_empty_pt"),
     ],
 )
 def test_valid_models(data: dict[str, ty.Any]) -> None:
@@ -239,6 +259,24 @@ def test_valid_models(data: dict[str, ty.Any]) -> None:
             {"point2d_01": shapely.Point(0.5, 2)},
             "out_of_bounds",
             id="point2d_01_y_out",
+        ),
+        pytest.param(
+            {"valid_polygon": shapely.Polygon([(0, 0), (0, 1), (1, 0), (1, 1)])},
+            "invalid_geometry",
+            id="valid_polygon-self-intersect",
+        ),
+        pytest.param(
+            {"invalid_polygon": shapely.Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])},
+            "=valid_geometry",
+            id="invalid_polygon-valid",
+        ),
+        pytest.param(
+            {"empty_pt": shapely.Point((0, 0))},
+            "non_empty_geometry",
+            id="empty_pt-non-empty",
+        ),
+        pytest.param(
+            {"non_empty_pt": shapely.Point()}, "empty_geometry", id="non_empty_pt-empty"
         ),
     ],
 )
