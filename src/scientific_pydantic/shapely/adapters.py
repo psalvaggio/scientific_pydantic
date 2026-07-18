@@ -14,6 +14,7 @@ from scientific_pydantic.schema import Encoding, make_core_schema
 if ty.TYPE_CHECKING:
     from numpy.typing import ArrayLike, NDArray
     from pydantic.json_schema import JsonSchemaValue
+    from shapely.geometry.base import BaseGeometry
 
 T = ty.TypeVar("T")
 
@@ -64,6 +65,16 @@ class GeometryConstraints(pydantic.BaseModel):
         description="Bounds for all of the z-coordinates in the geometry",
     )
 
+    is_valid: bool | None = pydantic.Field(
+        default=None,
+        description="Expected value of shapely.is_valid() on the geometry",
+    )
+
+    is_empty: bool | None = pydantic.Field(
+        default=None,
+        description="Expected value of shapely.is_empty() on the geometry",
+    )
+
     def __call__(self, geom: T) -> T:
         """Validate the given shapely geometry w.r.t the given constraints
 
@@ -89,30 +100,10 @@ class GeometryConstraints(pydantic.BaseModel):
             msg = "the given object ({t}) was not a shapely geometry"
             raise PydanticCustomError(err_t, msg, {"t": type(geom).__name__})
 
-        has_z = getattr(geom, "has_z", False)
-        if self.dimensionality == 2 and has_z:  # noqa: PLR2004
-            err_t = "dimensionality"
-            msg = "Only 2D geometries are allowed."
-            raise PydanticCustomError(err_t, msg)
-        if self.dimensionality == 3 and not has_z:  # noqa: PLR2004
-            err_t = "dimensionality"
-            msg = "Only 3D geometries are allowed."
-            raise PydanticCustomError(err_t, msg)
-
-        coords: NDArray | None = None
-        for idx, dim in enumerate("xyz"):
-            bounds = getattr(self, f"{dim}_bounds")
-            if bounds is None or (dim == "z" and not has_z):
-                continue
-            if coords is None:
-                coords = shapely.get_coordinates(geom, include_z=True)
-            try:
-                bounds(coords[:, idx])
-            except ValueError as e:
-                err_t = "out_of_bounds"
-                msg = "{dim} coordinates failed bounds check: {e}"
-                raise PydanticCustomError(err_t, msg, {"dim": dim, "e": e}) from None
-
+        self._check_dimensionality(geom)
+        self._check_bounds(geom)
+        self._check_valid(geom)
+        self._check_empty(geom)
         return geom
 
     def summary(self) -> str:
@@ -134,6 +125,65 @@ class GeometryConstraints(pydantic.BaseModel):
             if len(constraints) > 0
             else "N/A"
         )
+
+    def _check_dimensionality(self, geom: BaseGeometry) -> None:
+        """Validate the dimensionality of the geometry"""
+        has_z = getattr(geom, "has_z", False)
+        if self.dimensionality == 2 and has_z:  # noqa: PLR2004
+            err_t = "dimensionality"
+            msg = "Only 2D geometries are allowed."
+            raise PydanticCustomError(err_t, msg)
+        if self.dimensionality == 3 and not has_z:  # noqa: PLR2004
+            err_t = "dimensionality"
+            msg = "Only 3D geometries are allowed."
+            raise PydanticCustomError(err_t, msg)
+
+    def _check_bounds(self, geom: BaseGeometry) -> None:
+        """Validate the bounds of the geometry"""
+        import shapely
+
+        has_z = getattr(geom, "has_z", False)
+        coords: NDArray | None = None
+        for idx, dim in enumerate("xyz"):
+            bounds = getattr(self, f"{dim}_bounds")
+            if bounds is None or (dim == "z" and not has_z):
+                continue
+            if coords is None:
+                coords = shapely.get_coordinates(geom, include_z=True)
+            try:
+                bounds(coords[:, idx])
+            except ValueError as e:
+                err_t = "out_of_bounds"
+                msg = "{dim} coordinates failed bounds check: {e}"
+                raise PydanticCustomError(err_t, msg, {"dim": dim, "e": e}) from None
+
+    def _check_valid(self, geom: BaseGeometry) -> None:
+        """Validate the geometry w.r.t. self.is_valid"""
+        import shapely
+
+        if self.is_valid is not None and shapely.is_valid(geom) != self.is_valid:
+            if self.is_valid:
+                err_t = "invalid_geometry"
+                msg = "Expected the geometry to be valid, but it was not: {reason}"
+                args = {"reason": shapely.is_valid_reason(geom)}
+            else:
+                err_t = "valid_geometry"
+                msg = "Expected the geometry to be invalid, but it was valid"
+                args = {}
+            raise PydanticCustomError(err_t, msg, args)
+
+    def _check_empty(self, geom: BaseGeometry) -> None:
+        """Validate the geometry w.r.t. self.is_empty"""
+        import shapely
+
+        if self.is_empty is not None and shapely.is_empty(geom) != self.is_empty:
+            if self.is_empty:
+                err_t = "non_empty_geometry"
+                msg = "Expected the geometry to be empty, but it was not"
+            else:
+                err_t = "empty_geometry"
+                msg = "Expected the geometry to be non-empty, but it was empty"
+            raise PydanticCustomError(err_t, msg)
 
 
 class GeometryAdapter:
@@ -172,6 +222,10 @@ class GeometryAdapter:
         If given, bounds for the y-coordinates of the geometry.
     z_bounds
         If given, bounds for the z-coordinates of the geometry.
+    is_valid
+        If given, the expected value of shapely.is_valid() on the geometry.
+    is_empty
+        If given, the expected value of shapely.is_empty() on the geometry.
     encoding
         A custom encoding for this type
 
@@ -199,13 +253,15 @@ class GeometryAdapter:
 
     CoordinateBounds: ty.ClassVar[type] = CoordinateBounds
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
         dimensionality: ty.Literal[2, 3] | None = None,
         x_bounds: CoordinateBounds | None = None,
         y_bounds: CoordinateBounds | None = None,
         z_bounds: CoordinateBounds | None = None,
+        is_valid: bool | None = None,
+        is_empty: bool | None = None,
         encoding: Encoding | None = None,
     ) -> None:
         self._validator = GeometryConstraints(
@@ -213,6 +269,8 @@ class GeometryAdapter:
             x_bounds=x_bounds,
             y_bounds=y_bounds,
             z_bounds=z_bounds,
+            is_valid=is_valid,
+            is_empty=is_empty,
         )
         self._encoding = encoding
 
