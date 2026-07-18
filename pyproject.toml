@@ -1,6 +1,6 @@
 [project]
 name = "scientific_pydantic"
-version = "0.3.0"
+version = "0.4.0"
 description = "Pydantic adapters for common scientific types"
 readme = "README.md"
 license = "MIT"
