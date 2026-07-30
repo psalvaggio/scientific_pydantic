@@ -114,29 +114,29 @@ def test_range_validation_errors(
         pytest.param(
             {"default_type": float},
             ValueError,
-            "RangeAdapter: default_type was <class 'float'>, but only int's or "
-            "annotated int's are currently supported",
+            "RangeAdapter: default_type was <class 'float'>, but only int "
+            "or an annotated int is currently supported",
             id="default-float",
         ),
         pytest.param(
             {"start_type": ty.Annotated[float, 16], "stop_type": pydantic.PositiveInt},
             ValueError,
             r"RangeAdapter: start_type was typing.Annotated\[float, 16\], but "
-            "only int's or annotated int's are currently supported",
+            "only int or an annotated int is currently supported",
             id="start-annotated-float",
         ),
         pytest.param(
             {"stop_type": ty.Annotated[float, 16], "start_type": pydantic.PositiveInt},
             ValueError,
             r"RangeAdapter: stop_type was typing.Annotated\[float, 16\], but "
-            "only int's or annotated int's are currently supported",
+            "only int or an annotated int is currently supported",
             id="stop-annotated-float",
         ),
         pytest.param(
             {"step_type": ty.Annotated[float, 16]},
             ValueError,
             r"RangeAdapter: step_type was typing.Annotated\[float, 16\], but "
-            "only int's or annotated int's are currently supported",
+            "only int or an annotated int is currently supported",
             id="step-annotated-float",
         ),
     ],
@@ -168,6 +168,17 @@ def test_range_serialization(value: range, truth: str) -> None:
     assert model.model_dump(mode="json") == {"r": truth}
 
 
+def test_with_non_range() -> None:
+    """Test that a non-range raises an error"""
+    with pytest.raises(
+        pydantic.PydanticSchemaGenerationError,
+        match="RangeAdapter must be used with range, not <class 'int'>",
+    ):
+
+        class Model(pydantic.BaseModel):
+            a: ty.Annotated[int, RangeAdapter()]
+
+
 def test_json_schema() -> None:
     """JSON schema is stable and well-defined."""
 
@@ -179,3 +190,51 @@ def test_json_schema() -> None:
     assert r["type"] == "string"
     assert r["description"] == "Python range syntax: start:stop[:step]"
     assert "pattern" in r
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        pytest.param(range(5), range(5), id="range(5)"),
+        pytest.param(":5", range(5), id=":5"),
+        pytest.param(" : 5", range(5), id=" : 5"),
+        pytest.param("1:5", range(1, 5), id="1:5"),
+        pytest.param(" 1\t:\n5 : ", range(1, 5), id=" 1 : 5 : "),
+        pytest.param("1:10:2", range(1, 10, 2), id="1:10:2"),
+    ],
+)
+def test_valid_deprecated_usage(value: ty.Any, expected: range) -> None:
+    """Test valid validation cases for the deprecated classmethod approach."""
+    with pytest.warns(DeprecationWarning, match="use a RangeAdapter instance"):
+
+        class Model(pydantic.BaseModel):
+            r: ty.Annotated[range, RangeAdapter]
+
+    model = Model(r=value)
+    assert model.r == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "match"),
+    [
+        pytest.param(
+            123,
+            "expected range or slice-syntax string, got int",
+            id="invalid_range",
+        ),
+        pytest.param(
+            "5",
+            "invalid range syntax, expected 2-3 parts separated by :'s, got 1",
+            id="5",
+        ),
+    ],
+)
+def test_deprecated_range_validation_errors(value: ty.Any, match: str) -> None:
+    """Invalid inputs raise ValidationError and raise a deprecation warning."""
+    with pytest.warns(DeprecationWarning, match="use a RangeAdapter instance"):
+
+        class Model(pydantic.BaseModel):
+            r: ty.Annotated[range, RangeAdapter]
+
+    with pytest.raises(pydantic.ValidationError, match=match):
+        Model(r=value)

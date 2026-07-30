@@ -1,6 +1,7 @@
 """Adaptor for range"""
 
 import typing as ty
+import warnings
 from collections.abc import Hashable
 
 import pydantic
@@ -19,7 +20,8 @@ from .slice_syntax import (
 class RangeAdapter:
     """Pydantic adapter for Python `range` using slice syntax.
 
-    Currently, only `int` slices are supported.
+    Currently, only ranges with `int` fields are supported. Generic elements
+    that implement `__index__()` are not supported.
 
     Validation Options
     ------------------
@@ -82,8 +84,8 @@ class RangeAdapter:
                 continue
 
             msg = (
-                f"RangeAdapter: {label} was {t}, but only int's or annotated "
-                "int's are currently supported"
+                f"RangeAdapter: {label} was {t}, but only int or an annotated "
+                "int is currently supported"
             )
             raise ValueError(msg)
 
@@ -93,18 +95,36 @@ class RangeAdapter:
             stop_type=stop_type,
             step_type=step_type,
         )
-        self._encoding = encoding if encoding is not None else self._default_encoding()
+        self._encoding = encoding if encoding is not None else _default_encoding()
 
     def __get_pydantic_core_schema__(
         self,
-        _source_type: ty.Any,
-        _handler: pydantic.GetCoreSchemaHandler,
+        source_type: ty.Any,
+        handler: pydantic.GetCoreSchemaHandler | None = None,
     ) -> core_schema.CoreSchema:
         """Get the pydantic schema for this type"""
+        if handler is None:
+            msg = (
+                "Using RangeAdapter as a class annotation is deprecated. "
+                "Instead, use a RangeAdapter instance via RangeAdapter(). "
+                "This functionality will be removed in v0.6.0."
+            )
+            warnings.warn(msg, DeprecationWarning, stacklevel=2)
+            source_type = self
+            encoding = _default_encoding()
+            after_validators = []
+        else:
+            encoding = self._encoding
+            after_validators = [self._adapters.after_validator]
+
+        if source_type is not range:
+            msg = f"RangeAdapter must be used with range, not {source_type}"
+            raise pydantic.PydanticSchemaGenerationError(msg)
+
         return make_core_schema(
             range,
-            encoding=self._encoding,
-            after_validators=[self._adapters.after_validator],
+            encoding=encoding,
+            after_validators=after_validators,
         )
 
     @classmethod
@@ -117,15 +137,6 @@ class RangeAdapter:
         schema = handler(core_schema)
         schema["description"] = "Python range syntax: start:stop[:step]"
         return schema
-
-    def _default_encoding(self) -> Encoding[range]:
-        return Encoding(
-            serializer=_serialize,
-            before_validator=_validate,
-            json_schema=core_schema.str_schema(
-                pattern=r"^\s*-?\d+\s*:\s*-?\d+\s*(?::\s*-?\d+\s*)?$"
-            ),
-        )
 
 
 def _validate(value: ty.Any) -> range:
@@ -160,3 +171,13 @@ def _validate(value: ty.Any) -> range:
 def _serialize(value: range) -> str:
     step = None if value.step == 1 else value.step
     return format_slice_syntax(value.start, value.stop, step)
+
+
+def _default_encoding() -> Encoding[range]:
+    return Encoding(
+        serializer=_serialize,
+        before_validator=_validate,
+        json_schema=core_schema.str_schema(
+            pattern=r"^\s*-?\d+\s*:\s*-?\d+\s*(?::\s*-?\d+\s*)?$"
+        ),
+    )
