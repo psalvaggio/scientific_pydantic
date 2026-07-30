@@ -17,6 +17,7 @@ def parse_slice_syntax(
     converter: ty.Callable[[str], T],
     require_start: ty.Literal[True],
     require_stop: ty.Literal[True],
+    dest_type: type,
 ) -> tuple[T, T, T | None]: ...
 
 
@@ -27,6 +28,7 @@ def parse_slice_syntax(
     converter: ty.Callable[[str], T],
     require_start: ty.Literal[False],
     require_stop: ty.Literal[True],
+    dest_type: type,
 ) -> tuple[T | None, T, T | None]: ...
 
 
@@ -37,6 +39,7 @@ def parse_slice_syntax(
     converter: ty.Callable[[str], T],
     require_start: ty.Literal[False],
     require_stop: ty.Literal[False],
+    dest_type: type,
 ) -> tuple[T | None, T | None, T | None]: ...
 
 
@@ -47,6 +50,7 @@ def parse_slice_syntax(
     converter: ty.Callable[[str], T],
     require_start: ty.Literal[True],
     require_stop: ty.Literal[False],
+    dest_type: type,
 ) -> tuple[T, T | None, T | None]: ...
 
 
@@ -56,19 +60,22 @@ def parse_slice_syntax(
     converter: ty.Callable[[str], T],
     require_start: bool,
     require_stop: bool,
+    dest_type: type,
 ) -> tuple[T | None, T | None, T | None]:
     """Parse a Python-style slice string: [start]:[stop][:step].
 
     Parameters
     ----------
-    value : str
+    value
         Slice syntax string.
-    converter : Callable[[str], T]
+    converter
         Conversion function to use on each element if present
-    require_start : bool
+    require_start
         Whether start must be present and non-empty.
-    require_stop : bool
+    require_stop
         Whether stop must be present and non-empty.
+    dest_type
+        Destination type for the resulting tuple (only used in errors)
 
     Returns
     -------
@@ -78,7 +85,8 @@ def parse_slice_syntax(
     n_parts = len(parts)
     if not 2 <= n_parts <= 3:  # noqa: PLR2004
         msg = (
-            f"invalid slice syntax, expected 2-3 parts separated by :'s, got {n_parts}"
+            f"invalid {dest_type.__name__} syntax, expected 2-3 parts "
+            f"separated by :'s, got {n_parts}"
         )
         raise SliceSyntaxError(msg)
 
@@ -93,7 +101,7 @@ def parse_slice_syntax(
         stop = _parse(parts[1])
         step = _parse(parts[2]) if len(parts) == 3 else None  # noqa: PLR2004
     except (ValueError, TypeError) as exc:
-        msg = "invalid integer in slice string"
+        msg = f"invalid integer in {dest_type.__name__} string"
         raise SliceSyntaxError(msg) from exc
 
     if require_start and start is None:
