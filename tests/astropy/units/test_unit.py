@@ -73,7 +73,7 @@ def test_invalid(data: dict[str, ty.Any], match: str) -> None:
         Model(**data)
 
 
-ROUNT_TRIP_TESTS = [
+ROUND_TRIP_TESTS = [
     pytest.param({"any_unit": u.km / u.s}, id="unconstrained-unit"),
     pytest.param({"duration": "day"}, id="equiv-unit"),
     pytest.param({"spectral": u.nm}, id="custom-equiv-unit"),
@@ -81,7 +81,7 @@ ROUNT_TRIP_TESTS = [
 ]
 
 
-@pytest.mark.parametrize("data", ROUNT_TRIP_TESTS)
+@pytest.mark.parametrize("data", ROUND_TRIP_TESTS)
 def test_round_trip_python(data: dict[str, ty.Any]) -> None:
     """Test round-tripping through JSON"""
     original = Model(**data)
@@ -91,7 +91,7 @@ def test_round_trip_python(data: dict[str, ty.Any]) -> None:
         assert getattr(restored, f) == getattr(original, f)
 
 
-@pytest.mark.parametrize("data", ROUNT_TRIP_TESTS)
+@pytest.mark.parametrize("data", ROUND_TRIP_TESTS)
 def test_round_trip_json(data: dict[str, ty.Any]) -> None:
     """Test round-tripping through JSON"""
     original = Model(**data)

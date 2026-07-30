@@ -262,7 +262,7 @@ def test_clipping(
         arr: ty.Annotated[np.ndarray, NDArrayAdapter(clip=(clip_min, clip_max))]
 
     x = Model(arr=input_data)  # type: ignore[bad-argument-type]
-    np.testing.assert_array_equal(x.arr, expected)
+    npt.assert_array_equal(x.arr, expected)
 
 
 def test_dtype_and_shape() -> None:
@@ -284,7 +284,7 @@ def test_bounds_and_clipping() -> None:
 
     # Should clip values outside range
     x = Model(arr=[-5, 5, 15])  # type: ignore[bad-argument-type]
-    np.testing.assert_array_equal(x.arr, [0, 5, 10])
+    npt.assert_array_equal(x.arr, [0, 5, 10])
 
 
 def test_all_constraints() -> None:
@@ -323,7 +323,7 @@ def test_json_round_trip(input_data: ArrayLike) -> None:
     json_str = model.model_dump_json()
     restored = DefaultModel.model_validate_json(json_str)
 
-    np.testing.assert_array_equal(model.arr, restored.arr)
+    npt.assert_array_equal(model.arr, restored.arr)
 
 
 def test_json_with_dtype() -> None:

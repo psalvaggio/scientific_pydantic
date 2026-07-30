@@ -29,7 +29,7 @@ def test_int32() -> None:
 @pytest.mark.parametrize(
     ("value", "match"),
     [
-        pytest.param(14, "invalid_dtype"),
+        pytest.param(14, "invalid_dtype", id="14"),
     ],
 )
 def test_failed_validation(value: ty.Any, match: str) -> None:

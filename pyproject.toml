@@ -1,6 +1,6 @@
 [project]
 name = "scientific_pydantic"
-version = "0.5.0a1"
+version = "0.5.0"
 description = "Pydantic adapters for common scientific types"
 readme = "README.md"
 license = "MIT"
@@ -73,6 +73,9 @@ ignore = [
 
     # Trailing commas, conflicts with formatter
     "COM812",
+
+    # No copyright notices in this codebase
+    "CPY",
 
     # Docstring conventions (grammar, etc.)
     "D400",
