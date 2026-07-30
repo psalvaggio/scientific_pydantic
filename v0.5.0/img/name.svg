@@ -1,0 +1,25 @@
+<svg width="1320" height="240"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <defs>
+    <!-- Gradient matching logo palette -->
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0bbcd6"/>
+      <stop offset="55%" stop-color="#2a2f9b"/>
+      <stop offset="100%"  stop-color="#7b2cff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Skew group creates italic effect -->
+  <g transform="skewX(-12)">
+    <text x="40" y="170"
+          font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+          font-size="140"
+          font-weight="800"
+          fill="url(#grad)"
+          letter-spacing="2">
+      scientific_pydantic
+    </text>
+  </g>
+
+</svg>
