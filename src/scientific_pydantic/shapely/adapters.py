@@ -19,7 +19,7 @@ if ty.TYPE_CHECKING:
 T = ty.TypeVar("T")
 
 
-class CoordinateBounds(pydantic.BaseModel):
+class CoordinateBounds(pydantic.BaseModel, frozen=True, extra="forbid"):
     """Bounds checks for coordinates"""
 
     gt: float | None = pydantic.Field(
@@ -42,7 +42,7 @@ class CoordinateBounds(pydantic.BaseModel):
         return NDArrayValidator.from_kwargs(**self.model_dump())(coordinates)
 
 
-class GeometryConstraints(pydantic.BaseModel):
+class GeometryConstraints(pydantic.BaseModel, frozen=True, extra="forbid"):
     """Validation constraints that can be applied to shapely geometries"""
 
     dimensionality: ty.Literal[2, 3] | None = pydantic.Field(

@@ -55,7 +55,7 @@ def test_invalid(data: ty.Any, match: str) -> None:
         Model(t=data)
 
 
-ROUNT_TRIP_TESTS = [
+ROUND_TRIP_TESTS = [
     pytest.param("length", id="str-length"),
     pytest.param(u.get_physical_type("length"), id="pt-length"),
     pytest.param(u.m**2, id="unit-area"),
@@ -63,7 +63,7 @@ ROUNT_TRIP_TESTS = [
 ]
 
 
-@pytest.mark.parametrize("data", ROUNT_TRIP_TESTS)
+@pytest.mark.parametrize("data", ROUND_TRIP_TESTS)
 def test_round_trip_python(data: ty.Any) -> None:
     """Test round-tripping through JSON"""
     original = Model(t=data)
@@ -72,7 +72,7 @@ def test_round_trip_python(data: ty.Any) -> None:
     assert restored == original
 
 
-@pytest.mark.parametrize("data", ROUNT_TRIP_TESTS)
+@pytest.mark.parametrize("data", ROUND_TRIP_TESTS)
 def test_round_trip_json(data: ty.Any) -> None:
     """Test round-tripping through JSON"""
     original = Model(t=data)

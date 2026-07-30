@@ -299,6 +299,7 @@ def test_invalid_fields(data: dict[str, ty.Any], match: str) -> None:
                     reason="Annotated enforced this in earlier Python versions",
                 )
             ],
+            id="5",
         ),
         pytest.param(
             int,

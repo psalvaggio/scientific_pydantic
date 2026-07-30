@@ -195,14 +195,14 @@ def _mapping_validator() -> pydantic.TypeAdapter:  # noqa: C901
     import numpy as np  # noqa: TC002
     from scipy.spatial.transform import Rotation
 
-    class Quat(pydantic.BaseModel, extra="forbid"):
+    class Quat(pydantic.BaseModel, frozen=True, extra="forbid"):
         quat: ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., 4))]
         scalar_first: bool = False
 
         def __call__(self) -> Rotation:
             return Rotation.from_quat(self.quat, scalar_first=self.scalar_first)
 
-    class Matrix(pydantic.BaseModel, extra="forbid"):
+    class Matrix(pydantic.BaseModel, frozen=True, extra="forbid"):
         matrix: ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., 3, 3))]
         assume_valid: bool = False
 
@@ -223,21 +223,21 @@ def _mapping_validator() -> pydantic.TypeAdapter:  # noqa: C901
                 raise PydanticCustomError(err_t, msg)
             return val
 
-    class Rotvec(pydantic.BaseModel, extra="forbid"):
+    class Rotvec(pydantic.BaseModel, frozen=True, extra="forbid"):
         rotvec: ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., 3))]
         degrees: bool = False
 
         def __call__(self) -> Rotation:
             return Rotation.from_rotvec(self.rotvec, degrees=self.degrees)
 
-    class Mrp(pydantic.BaseModel, extra="forbid"):
+    class Mrp(pydantic.BaseModel, frozen=True, extra="forbid"):
         mrp: ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., 3))]
 
         def __call__(self) -> Rotation:
             return Rotation.from_mrp(self.mrp)
 
-    class Euler(pydantic.BaseModel, extra="forbid"):
-        class Arg(pydantic.BaseModel, extra="forbid"):
+    class Euler(pydantic.BaseModel, frozen=True, extra="forbid"):
+        class Arg(pydantic.BaseModel, frozen=True, extra="forbid"):
             seq: str = pydantic.Field(pattern="^([xyz]{1,3}|[XYZ]{1,3})$")
             angles: (
                 float
@@ -252,8 +252,8 @@ def _mapping_validator() -> pydantic.TypeAdapter:  # noqa: C901
                 self.euler.seq, self.euler.angles, degrees=self.euler.degrees
             )
 
-    class Davenport(pydantic.BaseModel, extra="forbid"):
-        class Arg(pydantic.BaseModel, extra="forbid"):
+    class Davenport(pydantic.BaseModel, frozen=True, extra="forbid"):
+        class Arg(pydantic.BaseModel, frozen=True, extra="forbid"):
             axes: ty.Annotated[np.ndarray, NDArrayAdapter(shape=(..., slice(1, 4), 3))]
             order: ty.Literal["e", "extrinsic", "i", "intrinsic"]  # type: ignore[invalid-literal]
             angles: (
