@@ -98,20 +98,6 @@ class SliceAdapter:
         _handler: pydantic.GetCoreSchemaHandler,
     ) -> core_schema.CoreSchema:
         """Get the pydantic schema for this type"""
-
-        def _serialize(value: slice) -> str | dict[str, ty.Any]:
-            if all(
-                x is None or isinstance(x, numbers.Number)
-                for x in (value.start, value.stop, value.step)
-            ):
-                return format_slice_syntax(value.start, value.stop, value.step)
-
-            return {
-                "start": value.start,
-                "stop": value.stop,
-                "step": value.step,
-            }
-
         return make_core_schema(
             slice,
             encoding=self._encoding,
